@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { auth } from './firebase';
 
 export class ApiError extends Error {
   status: number;
@@ -18,13 +19,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const message = (data && typeof data === 'object' && data.error) || data?.message || response.statusText || 'An unexpected error occurred';
-    
-    // Log error for debugging but don't show technical details in all user toasts
     console.error(`API Error [${response.status}]:`, message);
 
     if (response.status === 401) {
       toast.error('Session expired. Please log in again.');
-      // Optional: Redirect to login or handle re-auth
     } else if (response.status === 403) {
       toast.error('You do not have permission to perform this action.');
     } else if (response.status >= 500) {
@@ -39,14 +37,27 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const user = auth.currentUser;
+  if (!user) return {};
+  try {
+    const token = await user.getIdToken();
+    return { Authorization: `Bearer ${token}` };
+  } catch {
+    return {};
+  }
+}
+
 export const api = {
   async get<T>(url: string, options?: RequestInit): Promise<T> {
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(url, {
         ...options,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
           ...options?.headers,
         },
       });
@@ -61,11 +72,13 @@ export const api = {
 
   async post<T>(url: string, body?: any, options?: RequestInit): Promise<T> {
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(url, {
         ...options,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
           ...options?.headers,
         },
         body: body ? JSON.stringify(body) : undefined,
@@ -81,11 +94,13 @@ export const api = {
 
   async patch<T>(url: string, body?: any, options?: RequestInit): Promise<T> {
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(url, {
         ...options,
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
           ...options?.headers,
         },
         body: body ? JSON.stringify(body) : undefined,
@@ -101,11 +116,13 @@ export const api = {
 
   async put<T>(url: string, body?: any, options?: RequestInit): Promise<T> {
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(url, {
         ...options,
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
           ...options?.headers,
         },
         body: body ? JSON.stringify(body) : undefined,
@@ -121,11 +138,13 @@ export const api = {
 
   async delete<T>(url: string, options?: RequestInit): Promise<T> {
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(url, {
         ...options,
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
           ...options?.headers,
         },
       });

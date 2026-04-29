@@ -1,0 +1,81 @@
+version: '3.9'
+
+services:
+  # ── Content OS Application ──────────────────────────────────────────────────
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://contentos:contentos@postgres:5432/contentos_db
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID}
+      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: rebuild
+          path: package.json
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: contentos
+      POSTGRES_PASSWORD: contentos
+      POSTGRES_DB: contentos_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contentos -d contentos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── FreeFrame (open-source Frame.io alternative) ────────────────────────────
+  # Clone https://github.com/Techiebutler/freeframe locally and set build context,
+  # or use a published image if available.
+  # Uncomment to enable:
+  #
+  # freeframe:
+  #   build: ./freeframe
+  #   # image: techiebutler/freeframe:latest
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     DATABASE_URL: postgresql://contentos:contentos@postgres:5432/freeframe_db
+  #     REDIS_URL: redis://redis:6379
+  #     NEXT_PUBLIC_APP_URL: http://localhost:3001
+  #     ALLOWED_ORIGINS: http://localhost:3000
+  #   depends_on:
+  #     - postgres
+  #     - redis
+
+  # ── Redis (required by FreeFrame) ──────────────────────────────────────────
+  # Uncomment if using FreeFrame:
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+
+volumes:
+  postgres_data:
+  # redis_data:

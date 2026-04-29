@@ -11,3 +11,6 @@ coverage/
 *.db
 *.db-journal
 prisma/dev.db
+
+# Firebase credentials (never commit — use VITE_FIREBASE_* env vars instead)
+firebase-applet-config.json

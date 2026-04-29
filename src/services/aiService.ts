@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 const BASE_SYSTEM_INSTRUCTION = `You are an expert AI Content Creation Assistant and Strategist for a Content OS.
 Your role is to act as a proactive coach:
@@ -61,7 +61,7 @@ export async function sendChatMessage(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: import.meta.env.VITE_GEMINI_CHAT_MODEL || 'gemini-2.0-flash',
       contents: [
         ...history,
         {
@@ -107,7 +107,7 @@ export async function transcribeMedia(file: File): Promise<string> {
     });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: import.meta.env.VITE_GEMINI_CHAT_MODEL || 'gemini-2.0-flash',
       contents: [{
         role: 'user',
         parts: [
@@ -130,7 +130,7 @@ export async function transcribeMedia(file: File): Promise<string> {
 export async function generateChatTitle(firstMessage: string) {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: import.meta.env.VITE_GEMINI_FAST_MODEL || 'gemini-2.0-flash',
       contents: [{
         role: 'user',
         parts: [{ text: `Generate a very short, concise title (max 5 words) for a chat that starts with the following message: "${firstMessage}"` }]

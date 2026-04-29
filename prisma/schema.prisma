@@ -1,0 +1,226 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
+}
+
+// NOTE: For the AI Studio preview environment, we use sqlite.
+// In production, change the provider to "postgresql".
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  bio           String?
+  avatarUrl     String?
+  role          String   @default("viewer") // Global role
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  projects      Project[]
+  reviews       ClipReview[]
+  workspaces    WorkspaceMember[]
+  sentInvites   Invitation[]
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     WorkspaceMember[]
+  projects    Project[]
+  invitations Invitation[]
+}
+
+model Invitation {
+  id          String   @id @default(cuid())
+  email       String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  role        String   @default("editor") // 'admin', 'editor', 'viewer'
+  status      String   @default("pending") // 'pending', 'accepted'
+  token       String   @unique
+  invitedById String
+  invitedBy   User     @relation(fields: [invitedById], references: [id])
+  createdAt   DateTime @default(now())
+  
+  @@unique([email, workspaceId])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String   @default("member") // 'admin', 'editor', 'member', 'viewer'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, workspaceId])
+}
+
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  sourceType  String   // 'drive' | 'youtube' | 'fathom'
+  sourceUrl   String?
+  status      String   @default("ingesting") // 'ingesting' | 'clipping' | 'ready' | 'published'
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assets      Asset[]
+  clips       Clip[]
+  scripts     Script[]
+  ideas       Idea[]
+}
+
+model Asset {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id])
+  type         String   // 'video' | 'audio' | 'document'
+  storagePath  String
+  duration     Int?     // duration in seconds
+  status       String   @default("processing")
+  thumbnailUrl String?
+  createdAt    DateTime @default(now())
+  
+  reviews      ClipReview[]
+  comments     Comment[]
+}
+
+model Script {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  content     String   // Stores rich text, JSON, or markdown
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  timelines   Timeline[]
+}
+
+model Timeline {
+  id          String   @id @default(cuid())
+  scriptId    String
+  script      Script   @relation(fields: [scriptId], references: [id])
+  timestamp   Int      // seconds into the video
+  note        String
+  segment     String?
+}
+
+model Clip {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  videoUrl    String
+  status      String   @default("draft") // 'draft' | 'scheduled' | 'published'
+  createdAt   DateTime @default(now())
+}
+
+model ClipReview {
+  id          String   @id @default(cuid())
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  reviewerId  String
+  reviewer    User     @relation(fields: [reviewerId], references: [id])
+  status      String   // 'approved' | 'rejected' | 'pending'
+  comments    String?
+  createdAt   DateTime @default(now())
+}
+
+model AiInteraction {
+  id          String   @id @default(cuid())
+  prompt      String
+  response    String
+  model       String   @default("claude-3-opus")
+  status      String   @default("completed")
+  createdAt   DateTime @default(now())
+}
+
+model Idea {
+  id          String   @id @default(cuid())
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  title       String
+  description String
+  persona     String?
+  status      String   @default("backlog")
+  createdAt   DateTime @default(now())
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  assetId     String   
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  timePct     Float
+  timeStr     String
+  text        String
+  author      String
+  resolved    Boolean  @default(false)
+  drawing     String?  // JSON serialized drawing data
+  createdAt   DateTime @default(now())
+}
+
+model C2cDevice {
+  id          String   @id @default(cuid())
+  name        String
+  status      String   @default("idle") // 'recording', 'idle', 'offline'
+  battery     Int
+  storage     Int
+  lastActive  String   @default("Now")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  uploads     C2cUpload[]
+}
+
+model C2cUpload {
+  id          String   @id @default(cuid())
+  name        String
+  deviceId    String
+  device      C2cDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  size        String
+  status      String   @default("uploading") // 'uploading', 'completed'
+  progress    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Presentation {
+  id                 String   @id @default(cuid())
+  title              String
+  description        String
+  passwordEnabled    Boolean  @default(true)
+  downloadsEnabled   Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  videos             PresentationVideo[]
+}
+
+model PresentationVideo {
+  id              String       @id @default(cuid())
+  presentationId  String
+  presentation    Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  title           String
+  duration        String
+  thumbnail       String
+  videoUrl        String?
+  createdAt       DateTime     @default(now())
+}

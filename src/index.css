@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Geist+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@keyframes fadeSlideIn {
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0px);
+  }
+}
+
+@keyframes slideRightIn {
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateX(0px);
+  }
+}
+
+@keyframes testimonialIn {
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0px) scale(1);
+  }
+}
+
+@theme {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand: hsl(var(--brand));
+  --color-brand-foreground: hsl(var(--brand-foreground));
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-border: var(--border);
+
+  --animate-appear: appear 0.5s ease-out forwards;
+  --animate-appear-zoom: appear-zoom 0.5s ease-out forwards;
+
+  @keyframes appear {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes appear-zoom {
+    0% { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+}
+
+@layer utilities {
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+  .delay-700 {
+    animation-delay: 700ms;
+  }
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
+}
+
+@layer base {
+  :root {
+    --bg: #FDFBF7;
+    --surface: #FFFFFF;
+    --border: #E5E0D8;
+    --text-main: #2C2C2C;
+    --text-muted: #8C877D;
+    --accent-red: #9F2F2D;
+    --bg-red: #FDEBEC;
+    --hover-bg: #F5F2EB;
+    --accent-pastel: #D9E2E8;
+    --accent-pastel-hover: #C5D2DC;
+    --brand: 27 96% 61%;
+    --brand-foreground: 31 97% 72%;
+    --background: var(--bg);
+    --foreground: var(--text-main);
+    --primary: var(--text-main);
+    --primary-foreground: var(--surface);
+    --secondary: var(--hover-bg);
+    --secondary-foreground: var(--text-main);
+    --destructive: var(--accent-red);
+    --destructive-foreground: #FFFFFF;
+    --muted: var(--hover-bg);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--accent-pastel);
+    --accent-foreground: var(--text-main);
+    --input: var(--border);
+    --ring: var(--brand);
+  }
+
+  .dark {
+    --bg: #1A1A1A;
+    --surface: #242424;
+    --border: #333333;
+    --text-main: #E5E0D8;
+    --text-muted: #8C877D;
+    --accent-red: #FF6B6B;
+    --bg-red: #3A1C1C;
+    --hover-bg: #2C2C2C;
+    --accent-pastel: #3A4A5A;
+    --accent-pastel-hover: #4A5A6A;
+    --brand: 31 97% 72%;
+    --brand-foreground: 27 96% 61%;
+    --background: var(--bg);
+    --foreground: var(--text-main);
+    --primary: var(--text-main);
+    --primary-foreground: var(--surface);
+    --secondary: var(--hover-bg);
+    --secondary-foreground: var(--text-main);
+    --destructive: var(--accent-red);
+    --destructive-foreground: #FFFFFF;
+    --muted: var(--hover-bg);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--accent-pastel);
+    --accent-foreground: var(--text-main);
+    --input: var(--border);
+    --ring: var(--brand);
+  }
+
+  .bw {
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --border: #333333;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --accent-red: #ffffff;
+    --bg-red: #222222;
+    --hover-bg: #111111;
+    --accent-pastel: #222222;
+    --accent-pastel-hover: #333333;
+    --brand: 0 0% 100%;
+    --brand-foreground: 0 0% 0%;
+    --background: var(--bg);
+    --foreground: var(--text-main);
+    --primary: var(--text-main);
+    --primary-foreground: var(--bg);
+    --secondary: var(--hover-bg);
+    --secondary-foreground: var(--text-main);
+    --destructive: #ffffff;
+    --destructive-foreground: #000000;
+    --muted: var(--hover-bg);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--hover-bg);
+    --accent-foreground: var(--text-main);
+    --input: var(--border);
+    --ring: #ffffff;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    background-color: var(--bg);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+  }
+
+  /* Hide scrollbar for everywhere */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+  }
+  
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}

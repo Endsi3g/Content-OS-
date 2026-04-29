@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+firebase-applet-config.json
+*.db
+*.db-journal
+*.log
+electron/
+.git
+.gitignore
+README.md
+GUIDE.md
+API.md
+CHANGELOG.md

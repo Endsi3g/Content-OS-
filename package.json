@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "npx prisma generate && vite build && npx esbuild server.ts --platform=node --packages=external --bundle --format=cjs --outdir=dist --out-extension:.js=.cjs",
-    "start": "NODE_ENV=production DATABASE_URL=file:/tmp/data.db npx prisma db push --accept-data-loss --skip-generate && NODE_ENV=production DATABASE_URL=file:/tmp/data.db node dist/server.cjs",
+    "start": "NODE_ENV=production npx prisma migrate deploy && NODE_ENV=production node dist/server.cjs",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "preview": "vite preview",
@@ -39,6 +39,7 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.11.0",
+    "firebase-admin": "^13.8.0",
     "framer-motion": "^12.38.0",
     "gsap": "^3.15.0",
     "hono": "^4.12.15",

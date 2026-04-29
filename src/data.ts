@@ -1,9 +1,9 @@
 import { Asset, Clip, KnowledgeDoc, TeamMember } from './types';
 
 export const mockTeamMembers: TeamMember[] = [
-  { id: 'tm-001', name: 'Olivier Grenon', email: 'olivier@contentos.com', role: 'admin' },
-  { id: 'tm-002', name: 'Alex', email: 'alex@contentos.com', role: 'editor' },
-  { id: 'tm-003', name: 'Sam', email: 'sam@contentos.com', role: 'viewer' },
+  { id: 'tm-001', name: 'Admin', email: 'admin@example.com', role: 'admin' },
+  { id: 'tm-002', name: 'Editor', email: 'editor@example.com', role: 'editor' },
+  { id: 'tm-003', name: 'Viewer', email: 'viewer@example.com', role: 'viewer' },
 ];
 
 export const mockAssets: Asset[] = [

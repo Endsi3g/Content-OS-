@@ -108,5 +108,11 @@ export function useElectron() {
     getCaptureSources: api
       ? (): Promise<CaptureSource[]> => api.getCaptureSources()
       : null,
+
+    // ─── FFmpeg Local Video Editing ───────────────────────────────────────
+    ffmpeg: api ? api.ffmpeg : null,
+
+    // ─── Offline Storage & Sync ───────────────────────────────────────────
+    offline: api ? api.offline : null,
   };
 }

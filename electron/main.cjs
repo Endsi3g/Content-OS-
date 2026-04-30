@@ -5,6 +5,9 @@ const path = require('path');
 const fs = require('fs');
 const AutoLaunch = require('auto-launch');
 
+const { registerFFmpegHandlers } = require('./ffmpeg-service.cjs');
+const { registerOfflineHandlers } = require('./offline-store.cjs');
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 const APP_NAME = 'Content OS';
 const DEV_SERVER_URL = 'http://localhost:3000';
@@ -327,6 +330,10 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   registerShortcuts();
+  
+  // Register phase 2 & 3 services
+  registerFFmpegHandlers(mainWindow);
+  registerOfflineHandlers(mainWindow);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -55,4 +55,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ─── Phase 2: Screen Capture ──────────────────────────────────────────────
   /** Get available screen/window sources for capture. */
   getCaptureSources: () => ipcRenderer.invoke('capture:getSources'),
+
+  // ─── FFmpeg Local Video Editing ───────────────────────────────────────────
+  ffmpeg: {
+    trim: (args) => ipcRenderer.invoke('ffmpeg:trim', args),
+    reencode: (args) => ipcRenderer.invoke('ffmpeg:reencode', args),
+    concat: (args) => ipcRenderer.invoke('ffmpeg:concat', args),
+    thumbnail: (args) => ipcRenderer.invoke('ffmpeg:thumbnail', args),
+    probe: (args) => ipcRenderer.invoke('ffmpeg:probe', args),
+    onProgress: (callback) => {
+      const listener = (_, data) => callback(data);
+      ipcRenderer.on('ffmpeg:progress', listener);
+      return () => ipcRenderer.removeListener('ffmpeg:progress', listener);
+    }
+  },
+
+  // ─── Offline Storage & Sync ───────────────────────────────────────────────
+  offline: {
+    save: (args) => ipcRenderer.invoke('offline:save', args),
+    get: (args) => ipcRenderer.invoke('offline:get', args),
+    getAll: (args) => ipcRenderer.invoke('offline:getAll', args),
+    delete: (args) => ipcRenderer.invoke('offline:delete', args),
+    enqueue: (args) => ipcRenderer.invoke('offline:enqueue', args),
+    getQueue: () => ipcRenderer.invoke('offline:getQueue'),
+    clearQueue: () => ipcRenderer.invoke('offline:clearQueue'),
+    dequeue: (args) => ipcRenderer.invoke('offline:dequeue', args),
+    goOnline: () => ipcRenderer.invoke('offline:goOnline'),
+    status: () => ipcRenderer.invoke('offline:status'),
+    bulkSave: (args) => ipcRenderer.invoke('offline:bulkSave', args),
+    markSynced: (args) => ipcRenderer.invoke('offline:markSynced', args),
+    clearAll: () => ipcRenderer.invoke('offline:clearAll'),
+  }
 });

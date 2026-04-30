@@ -123,8 +123,8 @@ Placer dans le dossier `electron/` :
 - [x] **Drag & Drop natif** : `dragdrop:getFileInfo` IPC handler lit les metadonnees des fichiers deposes.
   - `fs:readFileBase64` pour lire les miniatures et previews.
   - Hook React : `useElectron().getFileInfo(paths)` et `useElectron().readFileBase64(path)`.
-- [ ] **Rendu video local** : FFmpeg embarque pour le montage de clips sans serveur. *(Phase suivante)*
-- [ ] **Mode hors-ligne** : Cache local des scripts avec sync au retour en ligne. *(Phase suivante)*
+- [x] **Rendu video local** : FFmpeg embarqué (`@ffmpeg-installer/ffmpeg` + `fluent-ffmpeg`) pour le montage de clips, re-encodage et thumbnails sans serveur.
+- [x] **Mode hors-ligne** : `electron-store` implémente un cache local chiffré JSON et une file d'attente de synchronisation (`syncQueue`) qui rejoue les actions au retour en ligne.
 - [x] **Capture d'ecran** : `capture:getSources` via `desktopCapturer` — retourne les fenetres/ecrans avec thumbnails.
   - Hook React : `useElectron().getCaptureSources()`.
 - [x] **Deep Links** : Protocole `contentos://` enregistre via `app.setAsDefaultProtocolClient()`.

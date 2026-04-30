@@ -1,116 +1,70 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { ArrowRight, Sparkle } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowRight, X, Sparkle } from '@phosphor-icons/react';
 import { useAppStore } from '../store';
 import { t } from '../i18n';
 
 export function Onboarding() {
   const { setHasCompletedOnboarding, language } = useAppStore();
   const [mounted, setMounted] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted || dismissed) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[var(--bg)] flex items-center justify-center p-4 overflow-hidden selection:bg-purple-200 selection:text-purple-900">
-      
-      {/* Subtle Constant Background Animations */}
-      <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center pointer-events-none opacity-40 dark:opacity-20 mix-blend-multiply dark:mix-blend-screen">
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 90, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute w-[600px] h-[600px] bg-purple-200/50 dark:bg-purple-800/20 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, -90, 0],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute w-[800px] h-[500px] bg-orange-100/50 dark:bg-orange-900/10 rounded-full blur-[120px] translate-x-1/4 translate-y-1/4"
-        />
-      </div>
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-3 mb-2 rounded-lg bg-gradient-to-br from-[var(--hover-bg)] to-[var(--surface)] border border-[var(--border)] overflow-hidden"
+      >
+        <div className="p-4">
+          {/* Header with dismiss */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkle size={14} weight="fill" className="text-[var(--accent)]" />
+              <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-muted)]">
+                Getting Started
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setDismissed(true);
+                setHasCompletedOnboarding(true);
+              }}
+              className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors p-0.5"
+            >
+              <X size={14} />
+            </button>
+          </div>
 
-      <div className="relative z-10 max-w-2xl w-full flex flex-col items-center text-center">
-        {/* Logo/Icon */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="w-16 h-16 bg-[var(--text-main)] text-[var(--bg)] rounded-2xl flex items-center justify-center mb-8 shadow-sm"
-        >
-          <span className="font-serif font-bold text-3xl">C</span>
-        </motion.div>
-
-        {/* Main Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <h1 className="font-serif text-5xl md:text-6xl text-[var(--text-main)] font-semibold tracking-tight mb-6 leading-[1.1]">
-            {language === 'fr' 
-              ? 'Pensez, créez, analysez.' 
-              : 'Think, create, analyze.'}
-          </h1>
-        </motion.div>
-
-        {/* Subtitle */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <p className="text-lg md:text-xl text-[var(--text-muted)] max-w-lg mb-12 font-sans font-light leading-relaxed">
+          {/* Content */}
+          <h3 className="font-serif text-base font-semibold text-[var(--text-main)] mb-1.5 leading-snug">
+            {language === 'fr' ? 'Bienvenue sur Content OS' : 'Welcome to Content OS'}
+          </h3>
+          <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-3">
             {language === 'fr'
-              ? 'L\'espace de travail tout-en-un pour organiser votre contenu, optimisé par l\'intelligence artificielle.'
-              : 'The all-in-one workspace to organize your content, powered by artificial intelligence.'}
+              ? 'Organisez votre contenu video avec l\'IA.'
+              : 'Organize your video content with AI.'}
           </p>
-        </motion.div>
 
-        {/* CTA Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        >
+          {/* CTA */}
           <button
             onClick={() => setHasCompletedOnboarding(true)}
-            className="group relative flex items-center gap-3 bg-[var(--text-main)] text-[var(--bg)] px-8 py-4 rounded-xl text-base font-medium overflow-hidden transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+            className="group w-full flex items-center justify-center gap-2 bg-[var(--text-main)] text-[var(--bg)] px-3 py-2 rounded-md text-xs font-medium transition-all hover:opacity-90 active:scale-[0.98]"
           >
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />
-            <span className="relative z-10 flex items-center gap-3">
-              {language === 'fr' ? 'Ouvrir mon espace' : 'Open Workspace'} 
-              <ArrowRight size={18} weight="bold" className="group-hover:translate-x-1 transition-transform" />
-            </span>
+            {language === 'fr' ? 'Commencer' : 'Get Started'}
+            <ArrowRight size={14} weight="bold" className="group-hover:translate-x-0.5 transition-transform" />
           </button>
-        </motion.div>
-
-        {/* Small subtle text */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1 }}
-          className="mt-16 text-xs text-[var(--text-muted)] font-mono flex items-center gap-1.5 opacity-60"
-        >
-          <Sparkle size={12} weight="fill" />
-          Content OS Pro Preview
-        </motion.div>
-      </div>
-    </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
+

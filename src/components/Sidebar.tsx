@@ -5,12 +5,13 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuPag
 import { SquaresFour, Browser, Tray, Database, Kanban, CheckSquareOffset, ChartLineUp, Fire, BookOpen, Gear, Moon, Sun, CaretLeft, CaretRight, Users, FileText, ClockCounterClockwise, TerminalWindow, User, CircleHalfTilt, FilmStrip, CloudArrowUp, MonitorPlay } from '@phosphor-icons/react';
 import { t } from '../i18n';
 import { OnboardingTooltip } from './OnboardingTooltip';
+import { Onboarding } from './Onboarding';
 import { useRole } from '../hooks/useRole';
 import { Role } from '../types';
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { currentView, setCurrentView, theme, setTheme, language, customRoles } = useAppStore();
+  const { currentView, setCurrentView, theme, setTheme, language, customRoles, hasCompletedOnboarding } = useAppStore();
   const rawRole = useRole();
   const currentRole = customRoles.find(r => r.id === rawRole) || customRoles.find(r => r.id === 'viewer');
 
@@ -18,35 +19,35 @@ export function Sidebar() {
     {
       label: null,
       items: [
-        { id: 'overview', icon: <SquaresFour size={20} />, label: t('nav.overview', language) },
-        { id: 'inbox', icon: <Tray size={20} />, label: t('nav.inbox', language) },
+        { id: 'overview', icon: <SquaresFour size={18} />, label: t('nav.overview', language) },
+        { id: 'inbox', icon: <Tray size={18} />, label: t('nav.inbox', language) },
       ]
     },
     {
-      label: 'Content Workspace',
+      label: 'Content',
       items: [
-        { id: 'c2c', icon: <CloudArrowUp size={20} />, label: 'Camera to Cloud' },
-        { id: 'database', icon: <Database size={20} />, label: t('nav.database', language) },
-        { id: 'workflow', icon: <Kanban size={20} />, label: t('nav.workflow', language) },
-        { id: 'review', icon: <CheckSquareOffset size={20} />, label: t('nav.review', language) },
-        { id: 'editor', icon: <FilmStrip size={20} />, label: 'Editor Workspace' },
-        { id: 'presentation', icon: <MonitorPlay size={20} />, label: 'Presentations' },
-        { id: 'scripts', icon: <FileText size={20} />, label: 'Scripts' },
+        { id: 'c2c', icon: <CloudArrowUp size={18} />, label: 'Camera to Cloud' },
+        { id: 'database', icon: <Database size={18} />, label: t('nav.database', language) },
+        { id: 'workflow', icon: <Kanban size={18} />, label: t('nav.workflow', language) },
+        { id: 'review', icon: <CheckSquareOffset size={18} />, label: t('nav.review', language) },
+        { id: 'editor', icon: <FilmStrip size={18} />, label: 'Editor' },
+        { id: 'presentation', icon: <MonitorPlay size={18} />, label: 'Presentations' },
+        { id: 'scripts', icon: <FileText size={18} />, label: 'Scripts' },
       ]
     },
     {
-      label: 'Tools & Analytics',
+      label: 'Tools',
       items: [
-        { id: 'analytics', icon: <ChartLineUp size={20} />, label: 'Analytics' },
-        { id: 'aiCoach', icon: <Fire size={20} />, label: t('nav.aiCoach', language) },
-        { id: 'knowledge', icon: <BookOpen size={20} />, label: t('nav.knowledge', language) },
+        { id: 'analytics', icon: <ChartLineUp size={18} />, label: 'Analytics' },
+        { id: 'aiCoach', icon: <Fire size={18} />, label: t('nav.aiCoach', language) },
+        { id: 'knowledge', icon: <BookOpen size={18} />, label: t('nav.knowledge', language) },
       ]
     },
     {
-      label: 'System Settings',
+      label: 'System',
       items: [
-        { id: 'team', icon: <Users size={20} />, label: 'Team' },
-        { id: 'boardControl', icon: <TerminalWindow size={20} />, label: 'Board Control' },
+        { id: 'team', icon: <Users size={18} />, label: 'Team' },
+        { id: 'boardControl', icon: <TerminalWindow size={18} />, label: 'Board Control' },
       ]
     }
   ];
@@ -76,9 +77,11 @@ export function Sidebar() {
             {!isCollapsed && <span className="font-serif font-medium text-lg tracking-tight text-[var(--text-main)] whitespace-nowrap">Content OS</span>}
           </div>
         </div>
+        {/* Onboarding — inside sidebar */}
+        {!hasCompletedOnboarding && !isCollapsed && <Onboarding />}
 
         {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-6">
+      <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-5">
         {navGroups.map((group, groupIdx) => {
           const visibleItems = currentRole ? group.items.filter(item => currentRole.allowedViews.includes(item.id)) : group.items;
           if (visibleItems.length === 0) return null;
@@ -153,11 +156,11 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="p-4 border-t border-[var(--border)] flex flex-col gap-2 shrink-0">
+      <div className="p-3 border-t border-[var(--border)] flex flex-col gap-1 shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger className={`w-full px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--hover-bg)]`}>
-            <div className="shrink-0"><User size={20} /></div>
-            {!isCollapsed && <span className="whitespace-nowrap flex-1 text-left">My Account</span>}
+            <div className="shrink-0"><User size={18} /></div>
+            {!isCollapsed && <span className="whitespace-nowrap flex-1 text-left">Account</span>}
           </DropdownMenuTrigger>
           
           <DropdownMenuContent className="min-w-[16rem] w-auto mb-2" side="right" align="end">
@@ -214,7 +217,7 @@ export function Sidebar() {
           }`}
           title={isCollapsed ? 'Settings' : undefined}
         >
-          <div className="shrink-0"><Gear size={20} /></div>
+          <div className="shrink-0"><Gear size={18} /></div>
           {!isCollapsed && <span className="whitespace-nowrap">Settings</span>}
         </button>
       </div>

@@ -44,4 +44,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   /** Returns the current app version from package.json. */
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
+
+  // ─── Phase 2: Drag & Drop ─────────────────────────────────────────────────
+  /** Get file metadata for dropped file paths. */
+  getFileInfo: (filePaths) => ipcRenderer.invoke('dragdrop:getFileInfo', filePaths),
+
+  /** Read a file as base64 (thumbnails, small files). */
+  readFileBase64: (filePath) => ipcRenderer.invoke('fs:readFileBase64', filePath),
+
+  // ─── Phase 2: Screen Capture ──────────────────────────────────────────────
+  /** Get available screen/window sources for capture. */
+  getCaptureSources: () => ipcRenderer.invoke('capture:getSources'),
 });

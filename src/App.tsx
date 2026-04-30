@@ -71,7 +71,7 @@ function AuthenticatedApp() {
   return (
     <div className="flex h-screen bg-[var(--bg)] text-[var(--text-main)] overflow-hidden font-sans">
       <Toaster position="top-right" richColors />
-      {!hasCompletedOnboarding && <Onboarding />}
+      {/* Onboarding now lives inside the Sidebar */}
       
       <Sidebar />
 

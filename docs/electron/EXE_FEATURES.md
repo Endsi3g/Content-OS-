@@ -118,14 +118,21 @@ Placer dans le dossier `electron/` :
 
 ## 🔮 Roadmap Future (EXE-Only)
 
-### Phase 2 — Fonctionnalités Avancées
-- [ ] **Drag & Drop natif** : Glisser des fichiers depuis l'Explorateur Windows directement dans l'app.
-- [ ] **Rendu vidéo local** : Utiliser FFmpeg embarqué pour le montage de clips sans serveur.
-- [ ] **Mode hors-ligne** : Cache local des scripts et projets avec synchronisation au retour en ligne.
-- [ ] **Capture d'écran** : Enregistrement natif de l'écran via `desktopCapturer`.
-- [ ] **Deep Links** : Ouvrir `contentos://script/123` depuis un lien externe.
+## Phase 2 — Fonctionnalites Avancees (Implemented)
 
-### Phase 3 — Distribution
-- [ ] **Auto-Update** : Mise à jour automatique via `electron-updater` + GitHub Releases.
-- [ ] **Code Signing** : Certificat Windows pour éviter les avertissements SmartScreen.
-- [ ] **Crash Reports** : Intégration Sentry pour le monitoring du client desktop.
+- [x] **Drag & Drop natif** : `dragdrop:getFileInfo` IPC handler lit les metadonnees des fichiers deposes.
+  - `fs:readFileBase64` pour lire les miniatures et previews.
+  - Hook React : `useElectron().getFileInfo(paths)` et `useElectron().readFileBase64(path)`.
+- [ ] **Rendu video local** : FFmpeg embarque pour le montage de clips sans serveur. *(Phase suivante)*
+- [ ] **Mode hors-ligne** : Cache local des scripts avec sync au retour en ligne. *(Phase suivante)*
+- [x] **Capture d'ecran** : `capture:getSources` via `desktopCapturer` — retourne les fenetres/ecrans avec thumbnails.
+  - Hook React : `useElectron().getCaptureSources()`.
+- [x] **Deep Links** : Protocole `contentos://` enregistre via `app.setAsDefaultProtocolClient()`.
+  - Single-instance lock pour Windows, `open-url` event pour macOS.
+  - Exemple : `contentos://script/123` navigue automatiquement vers `/script/123`.
+
+## Phase 3 — Distribution (Scaffolded)
+
+- [x] **Auto-Update** : Code scaffold dans `main.cjs` — decommentez pour activer `electron-updater`.
+- [ ] **Code Signing** : Certificat Windows pour eviter les avertissements SmartScreen.
+- [ ] **Crash Reports** : Integration Sentry pour le monitoring du client desktop.

@@ -1,7 +1,8 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, globalShortcut, ipcMain, dialog, shell, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, globalShortcut, ipcMain, dialog, shell, Notification, desktopCapturer, protocol } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const AutoLaunch = require('auto-launch');
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -229,6 +230,98 @@ ipcMain.handle('app:isElectron', () => true);
 // Get app version
 ipcMain.handle('app:getVersion', () => app.getVersion());
 
+// ─── Phase 2: Drag & Drop ─────────────────────────────────────────────────────
+// The renderer sends dropped file paths from the browser drag event.
+// We read the files and return metadata for each.
+ipcMain.handle('dragdrop:getFileInfo', async (_, filePaths) => {
+  const results = [];
+  for (const filePath of filePaths) {
+    try {
+      const stats = fs.statSync(filePath);
+      results.push({
+        path: filePath,
+        name: path.basename(filePath),
+        ext: path.extname(filePath).toLowerCase(),
+        size: stats.size,
+        isDirectory: stats.isDirectory(),
+      });
+    } catch {
+      // skip inaccessible files
+    }
+  }
+  return results;
+});
+
+// Read a file from disk and return as base64 (for thumbnails, small files)
+ipcMain.handle('fs:readFileBase64', async (_, filePath) => {
+  try {
+    const buffer = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const mime = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.mp4': 'video/mp4' }[ext] || 'application/octet-stream';
+    return { data: buffer.toString('base64'), mime, name: path.basename(filePath) };
+  } catch {
+    return null;
+  }
+});
+
+// ─── Phase 2: Screen Capture ──────────────────────────────────────────────────
+ipcMain.handle('capture:getSources', async () => {
+  const sources = await desktopCapturer.getSources({
+    types: ['window', 'screen'],
+    thumbnailSize: { width: 320, height: 180 },
+  });
+  return sources.map(s => ({
+    id: s.id,
+    name: s.name,
+    thumbnail: s.thumbnail.toDataURL(),
+  }));
+});
+
+// ─── Phase 2: Deep Links ──────────────────────────────────────────────────────
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('contentos', process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('contentos');
+}
+
+// Handle deep link on Windows (single-instance lock)
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine) => {
+    // Deep link URL is the last argument
+    const deepLinkUrl = commandLine.find(arg => arg.startsWith('contentos://'));
+    if (deepLinkUrl && mainWindow) {
+      const route = deepLinkUrl.replace('contentos://', '/');
+      mainWindow.webContents.send('navigate', route);
+      mainWindow.show();
+      mainWindow.focus();
+    } else if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+// ─── Phase 3: Auto-Update Scaffold ────────────────────────────────────────────
+// When electron-updater is installed, uncomment the following:
+// const { autoUpdater } = require('electron-updater');
+// autoUpdater.autoDownload = true;
+// autoUpdater.autoInstallOnAppQuit = true;
+//
+// autoUpdater.on('update-available', (info) => {
+//   showTrayNotification('Mise a jour disponible', `Version ${info.version} est en cours de telechargement.`);
+// });
+//
+// autoUpdater.on('update-downloaded', () => {
+//   showTrayNotification('Mise a jour prete', 'Redemarrez Content OS pour appliquer la mise a jour.');
+// });
+//
+// In app.whenReady(), add: autoUpdater.checkForUpdatesAndNotify();
+
 // ─── App Lifecycle ────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   createWindow();
@@ -254,4 +347,15 @@ app.on('before-quit', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+});
+
+// Handle open-url for macOS deep links
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  const route = url.replace('contentos://', '/');
+  if (mainWindow) {
+    mainWindow.webContents.send('navigate', route);
+    mainWindow.show();
+    mainWindow.focus();
+  }
 });

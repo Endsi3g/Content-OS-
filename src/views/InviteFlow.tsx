@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 import { Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { api } from '../lib/api';
 
 export const InviteFlow = ({ token, onComplete }: { token: string; onComplete: () => void }) => {
   const { user, refreshDbUser } = useAuth();
@@ -11,44 +12,32 @@ export const InviteFlow = ({ token, onComplete }: { token: string; onComplete: (
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchInvite = async () => {
-      try {
-        const res = await fetch(`/api/invites/${token}`);
-        const data = await res.json();
-        if (data.invite) {
-          setInvite(data.invite);
-        } else {
-          setError(data.error || 'Invalid invite');
-        }
-      } catch (e) {
-        setError('Failed to load invite');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInvite();
+    api.get<{ success: boolean; invite: any; error?: string }>(`/api/invites/${token}`)
+      .then(data => {
+        if (data.invite) setInvite(data.invite);
+        else setError(data.error || 'Invalid invite');
+      })
+      .catch(() => setError('Failed to load invite'))
+      .finally(() => setLoading(false));
   }, [token]);
 
   const acceptInvite = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/invites/${token}/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user?.email })
-      });
-      const data = await res.json();
+      const data = await api.post<{ success: boolean; workspace: any; error?: string }>(
+        `/api/invites/${token}/accept`,
+        { email: user?.email }
+      );
       if (data.success) {
         toast.success(`Welcome to ${data.workspace.name}!`);
         await refreshDbUser();
-        // Clear the URL
         window.history.replaceState({}, document.title, window.location.pathname);
         onComplete();
       } else {
         setError(data.error || 'Failed to accept invite. Make sure you logged in with the invited email.');
         setLoading(false);
       }
-    } catch (e) {
+    } catch {
       setError('Network error while accepting invite');
       setLoading(false);
     }

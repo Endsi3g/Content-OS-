@@ -48,18 +48,37 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export const MetricoolAnalytics = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMetricoolAnalytics().then((res) => {
-      setData(res);
-      setLoading(false);
-    });
+    fetchMetricoolAnalytics()
+      .then((res) => {
+        setData(res);
+      })
+      .catch((err) => {
+        console.error('Metricool fetch failed:', err);
+        setError('Failed to load analytics data. Please check your Metricool configuration.');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
         <Spinner size={24} className="animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="text-center max-w-sm">
+          <ChartLineUp size={40} className="mx-auto mb-4 text-[var(--text-muted)] opacity-40" />
+          <p className="text-[var(--text-muted)] text-sm">
+            {error || 'No analytics data available. Configure your Metricool API key in settings.'}
+          </p>
+        </div>
       </div>
     );
   }

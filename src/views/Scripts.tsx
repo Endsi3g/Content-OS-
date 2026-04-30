@@ -11,50 +11,66 @@ import * as Y from 'yjs';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { HocuspocusProvider } from '@hocuspocus/provider';
+import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../lib/firebase';
+import { api } from '../lib/api';
 
-function CollaborativeEditor({ script, assets, teamMembers, updateScript }: any) {
+const CURSOR_COLORS = ['#f783ac', '#8ce99a', '#74c0fc', '#ffd43b', '#b197fc'];
+
+function CollaborativeEditor({ script, assets, teamMembers, updateScript, userName, userAvatar }: any) {
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [activeCollaborators, setActiveCollaborators] = useState<any[]>([]);
 
   useEffect(() => {
-    // Determine websocket URL
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url = `${protocol}//${window.location.host}/collaboration`;
+    let newProvider: HocuspocusProvider;
 
-    const doc = new Y.Doc();
-    
-    // Connect to Hocuspocus/Yjs websocket
-    const newProvider = new HocuspocusProvider({
-      url,
-      name: script.id,
-      document: doc,
-    });
+    const connect = async () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      let wsUrl = `${protocol}//${window.location.host}/collaboration`;
 
-    const userColor = ['#f783ac', '#8ce99a', '#74c0fc', '#ffd43b', '#b197fc'][Math.floor(Math.random() * 5)];
-    const username = `User ${Math.floor(Math.random() * 100)}`;
-    
-    newProvider.setAwarenessField('user', {
-      name: username,
-      color: userColor,
-    });
+      // Append auth token so the server can verify the WebSocket connection
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        if (token) wsUrl += `?token=${encodeURIComponent(token)}`;
+      } catch {
+        // proceed without token in dev mode
+      }
 
-    newProvider.on('awarenessUpdate', () => {
-      const states = newProvider.awareness.getStates();
-      const users: any[] = [];
-      states.forEach((state: any, clientId: number) => {
-        if (state.user && clientId !== newProvider.awareness.clientID) {
-          users.push(state.user);
-        }
+      const doc = new Y.Doc();
+      const userColor = CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)];
+
+      newProvider = new HocuspocusProvider({
+        url: wsUrl,
+        name: script.id,
+        document: doc,
       });
-      setActiveCollaborators(users);
-    });
 
-    setProvider(newProvider);
+      newProvider.setAwarenessField('user', {
+        name: userName || 'Anonymous',
+        color: userColor,
+        avatarUrl: userAvatar || null,
+      });
+
+      newProvider.on('awarenessUpdate', () => {
+        const states = newProvider.awareness.getStates();
+        const users: any[] = [];
+        states.forEach((state: any, clientId: number) => {
+          if (state.user && clientId !== newProvider.awareness.clientID) {
+            users.push(state.user);
+          }
+        });
+        setActiveCollaborators(users);
+      });
+
+      setProvider(newProvider);
+    };
+
+    connect();
 
     return () => {
-      newProvider.destroy();
+      newProvider?.destroy();
     };
-  }, [script.id]);
+  }, [script.id, userName, userAvatar]);
 
   const editor = useEditor({
     extensions: [
@@ -189,23 +205,22 @@ function CollaborativeEditor({ script, assets, teamMembers, updateScript }: any)
 
 export function Scripts() {
   const { scripts, assets, teamMembers, addScript, updateScript, removeScript } = useAppStore();
+  const { user } = useAuth();
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
 
   const [backendScript, setBackendScript] = useState<{ id: string, title: string, content: string } | null>(null);
-  
+
   const selectedScript = scripts.find(s => s.id === selectedScriptId) || (backendScript ? {
-      id: backendScript.id,
-      title: backendScript.title,
-      content: backendScript.content,
-      assetId: undefined,
-      assigneeId: undefined,
-      updatedAt: new Date().toISOString()
+    id: backendScript.id,
+    title: backendScript.title,
+    content: backendScript.content,
+    assetId: undefined,
+    assigneeId: undefined,
+    updatedAt: new Date().toISOString()
   } as any : null);
 
   useEffect(() => {
-    // Fetch the latest script from the Prisma backend.
-    fetch('/api/scripts/latest')
-      .then(r => r.json())
+    api.get<{ success: boolean; script: any }>('/api/scripts/latest')
       .then(data => {
         if (data.success && data.script) {
           setBackendScript({
@@ -325,12 +340,14 @@ export function Scripts() {
       {/* Editor */}
       <div className="flex-1 border border-[var(--border)] bg-[var(--surface)] flex flex-col rounded-xl overflow-hidden shadow-sm">
         {selectedScript ? (
-          <CollaborativeEditor 
-            key={selectedScript.id} 
-            script={selectedScript} 
-            assets={assets} 
-            teamMembers={teamMembers} 
-            updateScript={updateScript} 
+          <CollaborativeEditor
+            key={selectedScript.id}
+            script={selectedScript}
+            assets={assets}
+            teamMembers={teamMembers}
+            updateScript={updateScript}
+            userName={user?.displayName || user?.email || 'Anonymous'}
+            userAvatar={user?.photoURL || null}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">

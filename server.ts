@@ -1,4 +1,6 @@
 import express from "express";
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import http from 'http';
@@ -7,7 +9,7 @@ import { WebSocketServer } from 'ws';
 import * as dotenv from 'dotenv';
 import { randomBytes } from 'crypto';
 import { GoogleGenAI } from '@google/genai';
-import { requireAuth, AuthenticatedRequest } from './middleware/auth';
+import { requireAuth, verifyWsToken, AuthenticatedRequest } from './middleware/auth';
 
 dotenv.config();
 
@@ -20,17 +22,39 @@ const ADMIN_EMAILS = new Set(
   (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean)
 );
 
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
+  datasources: { db: { url: process.env.DATABASE_URL } },
 });
 
 const genai = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   : null;
+
+// In-memory store for YouTube OAuth state tokens (CSRF protection)
+// Each entry is removed after use or after 10 minutes
+const pendingOAuthStates = new Map<string, number>();
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+const aiLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
+
+const ytImportLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
 
 const api = express.Router();
 
@@ -40,7 +64,11 @@ api.get('/auth/youtube/url', (req, res) => {
   if (!clientId) {
     return res.status(503).json({ error: 'YouTube integration not configured' });
   }
-  const redirectUri = req.query.redirect_uri as string || `${req.protocol}://${req.get('host')}/api/auth/youtube/callback`;
+
+  const state = randomBytes(16).toString('hex');
+  pendingOAuthStates.set(state, Date.now() + OAUTH_STATE_TTL_MS);
+
+  const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/youtube/callback`;
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -48,16 +76,28 @@ api.get('/auth/youtube/url', (req, res) => {
     scope: 'https://www.googleapis.com/auth/youtube.readonly',
     access_type: 'offline',
     prompt: 'consent',
+    state,
   });
   res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
 });
 
 api.get(['/auth/youtube/callback', '/auth/youtube/callback/'], async (req, res) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
+
+  // Validate CSRF state
+  const stateStr = String(state || '');
+  const stateExpiry = pendingOAuthStates.get(stateStr);
+  const stateValid = stateExpiry !== undefined && Date.now() < stateExpiry;
+  pendingOAuthStates.delete(stateStr);
+
+  if (!stateValid) {
+    return res.status(400).send('<html><body><p>Invalid or expired OAuth state. Please try again.</p></body></html>');
+  }
 
   if (error) {
+    const safeError = String(error).replace(/['"<>&]/g, '');
     return res.send(`<html><body><script>
-      if(window.opener){window.opener.postMessage({type:'YOUTUBE_AUTH_ERROR',error:'${error}'},'*');window.close();}
+      if(window.opener){window.opener.postMessage({type:'YOUTUBE_AUTH_ERROR',error:'${safeError}'},'${ALLOWED_ORIGINS[0] || '*'}');window.close();}
       else{window.location.href='/';}
     </script></body></html>`);
   }
@@ -66,6 +106,10 @@ api.get(['/auth/youtube/callback', '/auth/youtube/callback/'], async (req, res) 
 
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    return res.status(503).send('YouTube integration not configured');
+  }
+
   const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/youtube/callback`;
 
   try {
@@ -74,26 +118,29 @@ api.get(['/auth/youtube/callback', '/auth/youtube/callback/'], async (req, res) 
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code: code as string,
-        client_id: clientId!,
-        client_secret: clientSecret!,
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
     });
     const tokenData = await tokenRes.json() as any;
     if (!tokenRes.ok) {
-      throw new Error(tokenData.error_description || 'Token exchange failed');
+      console.error('YouTube token exchange failed:', tokenData);
+      return res.status(502).send('Token exchange failed');
     }
+    const origin = ALLOWED_ORIGINS[0] || '*';
     res.send(`<html><body><script>
       if(window.opener){window.opener.postMessage({type:'YOUTUBE_AUTH_SUCCESS',tokens:${JSON.stringify({
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         expires_in: tokenData.expires_in,
-      })}},window.opener.location.origin);window.close();}
+      })}},${JSON.stringify(origin)});window.close();}
       else{window.location.href='/';}
     </script></body></html>`);
-  } catch (e) {
-    res.status(500).send(`Token exchange failed: ${String(e)}`);
+  } catch (err) {
+    console.error('YouTube OAuth callback error:', err);
+    res.status(500).send('An error occurred during authentication');
   }
 });
 
@@ -101,7 +148,7 @@ api.get(['/auth/youtube/callback', '/auth/youtube/callback/'], async (req, res) 
 api.post('/auth/sync', async (req: AuthenticatedRequest, res) => {
   try {
     const { email, name } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    if (!email || typeof email !== 'string') return res.status(400).json({ error: 'Email is required' });
 
     let user = await prisma.user.findUnique({
       where: { email },
@@ -155,13 +202,16 @@ api.post('/auth/sync', async (req: AuthenticatedRequest, res) => {
     }
 
     res.json({ success: true, user });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('POST /auth/sync error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
 // --- Protected routes (requireAuth middleware) ---
 api.use(requireAuth);
+
+const VALID_ROLES = new Set(['admin', 'editor', 'viewer', 'member']);
 
 // --- Workspaces & Teams ---
 api.get('/workspaces', async (req, res) => {
@@ -173,8 +223,9 @@ api.get('/workspaces', async (req, res) => {
       include: { workspaces: { include: { workspace: true } } },
     });
     res.json({ success: true, workspaces: user?.workspaces || [] });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /workspaces error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -182,6 +233,9 @@ api.post('/workspaces/:id/invite', async (req, res) => {
   try {
     const { id } = req.params;
     const { email, role, inviterEmail } = req.body;
+
+    if (!email || typeof email !== 'string') return res.status(400).json({ error: 'Email is required' });
+    const safeRole = VALID_ROLES.has(role) ? role : 'editor';
 
     const inviter = await prisma.user.findUnique({ where: { email: inviterEmail } });
     if (!inviter) return res.status(404).json({ error: 'Inviter not found' });
@@ -192,7 +246,7 @@ api.post('/workspaces/:id/invite', async (req, res) => {
       data: {
         email,
         workspaceId: id,
-        role: role || 'editor',
+        role: safeRole,
         token,
         invitedById: inviter.id,
       },
@@ -201,8 +255,9 @@ api.post('/workspaces/:id/invite', async (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] === 'https' ? 'https' : req.protocol;
     const host = req.get('host') || 'localhost:3000';
     res.json({ success: true, invite, inviteLink: `${protocol}://${host}/?invite=${token}` });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('POST /workspaces/:id/invite error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -215,8 +270,9 @@ api.get('/invites/:token', async (req, res) => {
     });
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
     res.json({ success: true, invite });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /invites/:token error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -247,8 +303,9 @@ api.post('/invites/:token/accept', async (req, res) => {
 
     await prisma.invitation.update({ where: { id: invite.id }, data: { status: 'accepted' } });
     res.json({ success: true, workspace: invite.workspace });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('POST /invites/:token/accept error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -260,41 +317,58 @@ api.get('/users', async (req, res) => {
       name: u.name,
       email: u.email,
       role: u.role,
-      avatar: u.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
+      avatar: u.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u.email)}`,
       bio: u.bio,
       status: 'active',
     }));
     res.json(mappedUsers);
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /users error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
 api.patch('/users/profile', async (req, res) => {
   try {
     const { email, bio, avatarUrl, name } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    if (!email || typeof email !== 'string') return res.status(400).json({ error: 'Email is required' });
+
+    // Validate avatarUrl if provided
+    if (avatarUrl !== undefined && avatarUrl !== null) {
+      try {
+        const parsed = new URL(String(avatarUrl));
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          return res.status(400).json({ error: 'Invalid avatar URL' });
+        }
+      } catch {
+        return res.status(400).json({ error: 'Invalid avatar URL' });
+      }
+    }
+
     const user = await prisma.user.update({
       where: { email },
       data: { bio, avatarUrl, name },
       include: { workspaces: { include: { workspace: true } } },
     });
     res.json({ success: true, user });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('PATCH /users/profile error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
 api.patch('/users/:id/role', async (req, res) => {
   try {
     const { role } = req.body;
+    if (!VALID_ROLES.has(role)) return res.status(400).json({ error: 'Invalid role' });
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: { role },
     });
     res.json({ success: true, user });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('PATCH /users/:id/role error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -306,8 +380,9 @@ api.get('/scripts/latest', async (req, res) => {
       include: { timelines: true, project: true },
     });
     res.json({ success: true, script });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /scripts/latest error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -318,8 +393,9 @@ api.patch('/scripts/:id', async (req, res) => {
       data: { content: req.body.content, version: { increment: 1 } },
     });
     res.json({ success: true, script: updatedScript });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('PATCH /scripts/:id error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -330,8 +406,9 @@ api.post('/scripts/:id/timeline', async (req, res) => {
       data: { scriptId: req.params.id, timestamp, note, segment },
     });
     res.json({ success: true, timeline });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('POST /scripts/:id/timeline error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -340,15 +417,16 @@ api.get('/assets/:id', async (req, res) => {
   try {
     const asset = await prisma.asset.findUnique({ where: { id: req.params.id } });
     res.json({ success: true, asset });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /assets/:id error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
-api.post('/assets/import-youtube', async (req, res) => {
+api.post('/assets/import-youtube', ytImportLimiter, async (req, res) => {
   try {
     const { url } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
+    if (!url || typeof url !== 'string') return res.status(400).json({ error: 'URL is required' });
 
     let videoId = '';
     try {
@@ -369,44 +447,61 @@ api.post('/assets/import-youtube', async (req, res) => {
     let thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
     if (apiKey) {
-      const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails&key=${apiKey}`);
-      const ytData = await ytRes.json() as any;
-      if (ytData.items?.length > 0) {
-        title = ytData.items[0].snippet.title;
-        thumbnailUrl = ytData.items[0].snippet.thumbnails?.high?.url || thumbnailUrl;
-        const match = ytData.items[0].contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-        if (match) {
-          duration = (parseInt(match[1] || '0')) * 3600
-                   + (parseInt(match[2] || '0')) * 60
-                   + (parseInt(match[3] || '0'));
+      const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${encodeURIComponent(videoId)}&part=snippet,contentDetails&key=${apiKey}`);
+      if (ytRes.ok) {
+        const ytData = await ytRes.json() as any;
+        if (ytData.items?.length > 0) {
+          title = ytData.items[0].snippet.title;
+          thumbnailUrl = ytData.items[0].snippet.thumbnails?.high?.url || thumbnailUrl;
+          const match = ytData.items[0].contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (match) {
+            duration = (parseInt(match[1] || '0')) * 3600
+                     + (parseInt(match[2] || '0')) * 60
+                     + (parseInt(match[3] || '0'));
+          }
         }
       }
     }
 
-    const firstUser = await prisma.user.findFirst();
-    if (!firstUser) return res.status(500).json({ error: 'No users found' });
+    const authenticatedReq = req as AuthenticatedRequest;
+    let ownerId: string;
+    if (authenticatedReq.firebaseEmail) {
+      const owner = await prisma.user.findUnique({ where: { email: authenticatedReq.firebaseEmail } });
+      ownerId = owner?.id || '';
+    }
+    if (!ownerId!) {
+      const firstUser = await prisma.user.findFirst();
+      if (!firstUser) return res.status(500).json({ error: 'No users found' });
+      ownerId = firstUser.id;
+    }
 
     const project = await prisma.project.create({
       data: {
         title,
         sourceType: 'youtube',
         sourceUrl: url,
-        ownerId: firstUser.id,
+        ownerId,
         assets: { create: { type: 'video', storagePath: url, duration, thumbnailUrl } },
       },
       include: { assets: true },
     });
     res.json({ success: true, project });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('POST /assets/import-youtube error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
 // --- AI Coach (real Gemini call via server-side key) ---
-api.post('/ai/coach/edit', async (req, res) => {
+api.post('/ai/coach/edit', aiLimiter, async (req, res) => {
   try {
     const { selectedText, instruction } = req.body;
-    if (!selectedText) return res.status(400).json({ error: 'selectedText is required' });
+    if (!selectedText || typeof selectedText !== 'string') {
+      return res.status(400).json({ error: 'selectedText is required' });
+    }
+    if (selectedText.length > 10_000) {
+      return res.status(400).json({ error: 'selectedText too long (max 10,000 characters)' });
+    }
 
     let improvedText = selectedText;
 
@@ -434,8 +529,9 @@ api.post('/ai/coach/edit', async (req, res) => {
     });
 
     res.json({ success: true, improvedText });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('POST /ai/coach/edit error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -443,8 +539,9 @@ api.post('/ai/coach/edit', async (req, res) => {
 api.get('/c2c/devices', async (req, res) => {
   try {
     res.json({ success: true, devices: await prisma.c2cDevice.findMany() });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /c2c/devices error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -455,8 +552,9 @@ api.get('/c2c/uploads', async (req, res) => {
       orderBy: { createdAt: 'desc' },
     });
     res.json({ success: true, uploads });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /c2c/uploads error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -468,8 +566,9 @@ api.get('/presentations/:id', async (req, res) => {
       ? await prisma.presentation.findFirst({ include: { videos: true } })
       : await prisma.presentation.findUnique({ where: { id }, include: { videos: true } });
     res.json({ success: true, presentation });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /presentations/:id error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -481,8 +580,9 @@ api.patch('/presentations/:id', async (req, res) => {
       data: { passwordEnabled, downloadsEnabled },
     });
     res.json({ success: true, presentation });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('PATCH /presentations/:id error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -494,8 +594,9 @@ api.get('/assets/:id/comments', async (req, res) => {
       orderBy: { createdAt: 'asc' },
     });
     res.json({ success: true, comments });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('GET /assets/:id/comments error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -513,8 +614,9 @@ api.post('/assets/:id/comments', async (req, res) => {
       },
     });
     res.json({ success: true, comment });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('POST /assets/:id/comments error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -525,8 +627,9 @@ api.patch('/comments/:id/resolve', async (req, res) => {
       data: { resolved: req.body.resolved },
     });
     res.json({ success: true, comment });
-  } catch (e) {
-    res.status(500).json({ error: String(e) });
+  } catch (err) {
+    console.error('PATCH /comments/:id/resolve error:', err);
+    res.status(500).json({ error: 'An error occurred' });
   }
 });
 
@@ -536,7 +639,18 @@ async function startServer() {
   const PORT = parseInt(process.env.PORT || '3000', 10);
 
   app.set('trust proxy', 1);
-  app.use(express.json());
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    credentials: true,
+  }));
+
+  app.use(express.json({ limit: '10mb' }));
 
   app.get('/health', (_, res) => res.status(200).send('OK'));
   app.get('/healthz', (_, res) => res.status(200).send('OK'));
@@ -549,12 +663,24 @@ async function startServer() {
   const hocuspocusServer = new Hocuspocus({ name: 'ContentOS-Collab' });
   const wss = new WebSocketServer({ noServer: true });
 
-  httpServer.on('upgrade', (request: any, socket: any, head: any) => {
-    if (request.url?.startsWith('/collaboration')) {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        hocuspocusServer.handleConnection(ws, request);
-      });
+  httpServer.on('upgrade', async (request: any, socket: any, head: any) => {
+    if (!request.url?.startsWith('/collaboration')) {
+      socket.destroy();
+      return;
     }
+
+    try {
+      await verifyWsToken(request);
+    } catch (err) {
+      console.warn('WebSocket auth rejected:', (err as Error).message);
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      hocuspocusServer.handleConnection(ws, request);
+    });
   });
 
   if (process.env.NODE_ENV !== 'production') {

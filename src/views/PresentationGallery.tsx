@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
+import {
   MonitorPlay, LockKey, DownloadSimple, UserCircle, PlayCircle, ShareNetwork, Gear
 } from '@phosphor-icons/react';
 import { useAppStore } from '../store';
 import { ScrollReveal } from '../components/ScrollReveal';
+import { api } from '../lib/api';
 
 export function PresentationGallery() {
   const { assets } = useAppStore();
@@ -16,32 +17,18 @@ export function PresentationGallery() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/presentations/default')
-      .then(r => r.json())
+    api.get<{ success: boolean; presentation: any }>('/api/presentations/default')
       .then(d => {
-        if (d.success && d.presentation) {
-          setPresentation(d.presentation);
-        }
-        setLoading(false);
+        if (d.success && d.presentation) setPresentation(d.presentation);
       })
-      .catch(e => {
-        console.error(e);
-        setLoading(false);
-      });
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const updateSetting = async (field: string, value: boolean) => {
     if (!presentation) return;
     setPresentation({ ...presentation, [field]: value });
-    try {
-      await fetch(`/api/presentations/${presentation.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value })
-      });
-    } catch (e) {
-      console.error(e);
-    }
+    api.patch(`/api/presentations/${presentation.id}`, { [field]: value }).catch(console.error);
   };
 
   if (loading) return <div className="flex items-center justify-center h-full text-[var(--text-main)]">Loading presentation...</div>;

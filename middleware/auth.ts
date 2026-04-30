@@ -4,20 +4,20 @@ import { PrismaClient } from '@prisma/client';
 
 // Safely get apps array depending on how ESM loaded firebase-admin
 const apps = admin.apps || (admin as any).default?.apps || [];
+const initializeApp = admin.initializeApp || (admin as any).default?.initializeApp;
 
-if (!apps.length && process.env.VITE_MOCK_MODE !== 'true') {
+if (!apps.length && process.env.VITE_MOCK_MODE !== 'true' && initializeApp) {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
   if (projectId && clientEmail && privateKey) {
-    admin.initializeApp({
-      credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+    const credential = admin.credential || (admin as any).default?.credential;
+    initializeApp({
+      credential: credential?.cert({ projectId, clientEmail, privateKey }),
     });
   } else {
-    // Dev mode without Firebase Admin credentials — token verification is skipped.
-    // Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY for production.
-    admin.initializeApp({ projectId: projectId || 'dev' });
+    initializeApp({ projectId: projectId || 'dev' });
     console.warn('Firebase Admin: credentials not fully configured — token verification disabled.');
   }
 } else if (process.env.VITE_MOCK_MODE === 'true') {
@@ -47,8 +47,9 @@ export async function requireAuth(
   res: Response,
   next: NextFunction
 ) {
-  // Skip auth verification if Firebase Admin credentials are not configured (dev mode)
-  if (admin.apps[0]?.options?.credential?.constructor?.name === 'ComputedAppOptions' ||
+  // Skip auth verification if in Mock Mode or if Firebase Admin credentials are not configured
+  if (process.env.VITE_MOCK_MODE === 'true' ||
+      admin.apps[0]?.options?.credential?.constructor?.name === 'ComputedAppOptions' ||
       !process.env.FIREBASE_CLIENT_EMAIL) {
     next();
     return;

@@ -14,7 +14,7 @@ interface Testimonial {
 const testimonialsData: Record<string, Testimonial[]> = {
   en: [
     {
-      text: "Content West has completely removed the 'production tax' from my workflow. I focus on the script, and the OS handles the rest of the orchestration.",
+      text: "Content OS has completely removed the 'production tax' from my workflow. I focus on the script, and the OS handles the rest of the orchestration.",
       image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
       name: "Alex Rivera",
       role: "Full-time Creator",
@@ -32,45 +32,15 @@ const testimonialsData: Record<string, Testimonial[]> = {
       role: "Creative Director",
     },
     {
-      text: "The integration between the Script lab and the Clip review is seamless. It's the first tool that actually maps to how creators think.",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "David Vane",
-      role: "Tech YouTuber",
-    },
-    {
-      text: "We used to lose files in Drive and lose track in Slack. Content West is our single source of truth for every piece of content we produce.",
+      text: "We used to lose files in Drive and lose track in Slack. Content OS is our single source of truth for every piece of content we produce.",
       image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150",
       name: "Elena Rodriguez",
       role: "Social Media Manager",
     },
-    {
-      text: "The smooth Kanban workflow for video editing is something I didn't know I needed until I used it. It's transformed our team communication.",
-      image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Jameson K.",
-      role: "Agency Founder",
-    },
-    {
-      text: "Metricool integration coupled with the Content Database gives us insights we never had before. We post smarter, not harder.",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Farhan Sidd",
-      role: "Data Lead @ ContentWest",
-    },
-    {
-      text: "Our entire post-production pipeline is now automated. The AI doesn't just cut; it understands the editorial intent behind the footage.",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Sana Sheikh",
-      role: "Post-Production Supervisor",
-    },
-    {
-      text: "From raw import to final approved social clips in minutes. This is the operating system for the next generation of media companies.",
-      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Hassan Ali",
-      role: "E-commerce Strategist",
-    },
   ],
   fr: [
     {
-      text: "Content West a complètement éliminé la 'taxe de production' de mon flux de travail. Je me concentre sur le script, et l'OS gère le reste de l'orchestration.",
+      text: "Content OS a complètement éliminé la 'taxe de production' de mon flux de travail. Je me concentre sur le script, et l'OS gère le reste de l'orchestration.",
       image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
       name: "Alex Rivera",
       role: "Créateur à temps plein",
@@ -88,40 +58,10 @@ const testimonialsData: Record<string, Testimonial[]> = {
       role: "Directrice créative",
     },
     {
-      text: "L'intégration entre le laboratoire de scripts et la révision des extraits est transparente. C'est le premier outil qui correspond vraiment à la façon dont les créateurs pensent.",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "David Vane",
-      role: "YouTuber Tech",
-    },
-    {
-      text: "Nous avions l'habitude de perdre des fichiers dans Drive et de perdre le fil sur Slack. Content West est notre unique source de vérité pour chaque élément de contenu que nous produisons.",
+      text: "Nous avions l'habitude de perdre des fichiers dans Drive et de perdre le fil sur Slack. Content OS est notre unique source de vérité pour chaque élément de contenu que nous produisons.",
       image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150",
       name: "Elena Rodriguez",
       role: "Social Media Manager",
-    },
-    {
-      text: "Le flux Kanban fluide pour le montage vidéo est quelque chose dont je ne savais pas avoir besoin jusqu'à ce que je l'utilise. Cela a transformé la communication de notre équipe.",
-      image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Jameson K.",
-      role: "Fondateur d'agence",
-    },
-    {
-      text: "L'intégration de Metricool associée à la base de données de contenu nous donne des informations que nous n'avions jamais eues auparavant. Nous publions de manière plus intelligente, et pas plus dure.",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Farhan Sidd",
-      role: "Responsable des données @ ContentWest",
-    },
-    {
-      text: "L'ensemble de notre pipeline de post-production est maintenant automatisé. L'IA ne se contente pas de couper ; elle comprend l'intention éditoriale derrière les séquences.",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Sana Sheikh",
-      role: "Superviseur de post-production",
-    },
-    {
-      text: "De l'importation brute aux extraits sociaux finaux approuvés en quelques minutes. C'est le système d'exploitation pour la prochaine génération d'entreprises de médias.",
-      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150&h=150",
-      name: "Hassan Ali",
-      role: "Stratège E-commerce",
     },
   ]
 };
@@ -204,9 +144,9 @@ export const TestimonialsSectionV2 = () => {
   const { language } = useAppStore();
   const currentTestimonials = testimonialsData[language] || testimonialsData.en;
   
-  const firstColumn = currentTestimonials.slice(0, 3);
-  const secondColumn = currentTestimonials.slice(3, 6);
-  const thirdColumn = currentTestimonials.slice(6, 9);
+  const firstColumn = currentTestimonials.slice(0, 2);
+  const secondColumn = currentTestimonials.slice(2, 4);
+  const thirdColumn: Testimonial[] = [];
 
   return (
     <section 
@@ -235,7 +175,7 @@ export const TestimonialsSectionV2 = () => {
             {language === 'en' ? 'What our users say' : 'Ce que disent nos créateurs'}
           </h2>
           <p className="text-center mt-5 text-white/50 text-lg leading-relaxed max-w-sm transition-colors">
-            {language === 'en' ? 'Discover how thousands of creators streamline their operations with Content West.' : 'Découvrez comment des milliers de créateurs optimisent leurs opérations avec Content West.'}
+            {language === 'en' ? 'Discover how thousands of creators streamline their operations with Content OS.' : 'Découvrez comment des milliers de créateurs optimisent leurs opérations avec Content OS.'}
           </p>
         </div>
 
@@ -246,7 +186,6 @@ export const TestimonialsSectionV2 = () => {
         >
           <TestimonialsColumn testimonials={firstColumn} duration={15} />
           <TestimonialsColumn testimonials={secondColumn} className="hidden md:block" duration={19} />
-          <TestimonialsColumn testimonials={thirdColumn} className="hidden lg:block" duration={17} />
         </div>
       </motion.div>
     </section>

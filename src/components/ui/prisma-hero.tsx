@@ -84,8 +84,9 @@ export const WordsPullUpMultiStyle = ({ segments, className = "", style }: Words
 
 /* ---------------- Hero ---------------- */
 const navItems = [
+  { label: { en: "Product", fr: "Produit" }, id: "home" },
+  { label: { en: "Workflow", fr: "Flux" }, id: "guide" },
   { label: { en: "Manifesto", fr: "Manifeste" }, id: "manifesto" },
-  { label: { en: "Guide", fr: "Comment utiliser" }, id: "guide" },
   { label: { en: "Updates", fr: "Mises à jour" }, id: "updates" },
 ];
 
@@ -111,9 +112,9 @@ const PrismaHero = ({ onLoginClick }: PrismaHeroProps) => {
     const strings = {
       heroTitle: "Content OS",
       heroDesc: language === 'en' 
-        ? "The ultimate central nervous system for your content strategy. Automated ingestion from YouTube and Drive, intelligent clipping, and Claude-powered analytics designed specifically for you."
-        : "Le système nerveux central ultime pour votre stratégie de contenu. Ingestion automatisée depuis YouTube et Drive, découpage intelligent et analyses propulsées par Claude conçues spécialement pour vous.",
-      enterWorkspace: language === 'en' ? "Enter Workspace" : "Entrer dans l'espace de travail",
+        ? "The Operating System for next-gen creators. Automated ingestion, AI-powered clipping, and social analytics—all in one place."
+        : "Le système d'exploitation pour les créateurs de nouvelle génération. Ingestion automatisée, découpage par IA et analyses sociales — tout au même endroit.",
+      enterWorkspace: language === 'en' ? "Open Workspace" : "Ouvrir l'Espace",
       login: language === 'en' ? "Log In" : "Connexion",
       signup: language === 'en' ? "Sign Up" : "S'inscrire",
       getStarted: language === 'en' ? "Get Started" : "Commencer",
@@ -121,8 +122,8 @@ const PrismaHero = ({ onLoginClick }: PrismaHeroProps) => {
         manifesto: {
           title: language === 'en' ? "Manifesto" : "Manifeste",
           desc: language === 'en' 
-            ? "Content West is the operating system for the next generation of creators and high-performance teams." 
-            : "Content West est le système d'exploitation pour la prochaine génération de créateurs et d'équipes performantes."
+            ? "Content OS is the operating system for the next generation of creators and high-performance teams." 
+            : "Content OS est le système d'exploitation pour la prochaine génération de créateurs et d'équipes performantes."
         },
         guide: {
           title: language === 'en' ? "How to use" : "Comment utiliser",
@@ -301,13 +302,13 @@ const PrismaHero = ({ onLoginClick }: PrismaHeroProps) => {
                 </div>
                 <div className="text-left space-y-6 text-lg text-white/80 max-w-2xl mx-auto leading-relaxed">
                   <p>
-                    {language === 'en' ? "Content creation is broken. Creators spend 80% of their time managing files, coordinating with editors, and figuring out what to post next, instead of actually creating. Content West was built at the intersection of these pain points." : "La création de contenu est brisée. Les créateurs passent 80% de leur temps à gérer des fichiers, à coordonner avec des monteurs et à déterminer quoi publier ensuite, au lieu de créer réellement. Content West est né à l'intersection de ces points de douleur."}
+                    {language === 'en' ? "Content creation is broken. Creators spend 80% of their time managing files, coordinating with editors, and figuring out what to post next, instead of actually creating. Content OS was built at the intersection of these pain points." : "La création de contenu est brisée. Les créateurs passent 80% de leur temps à gérer des fichiers, à coordonner avec des monteurs et à déterminer quoi publier ensuite, au lieu de créer réellement. Content OS est né à l'intersection de ces points de douleur."}
                   </p>
                   <p>
                     {language === 'en' ? "We believe in a world where ideas flow freely from conception to publication. Where our Content Operating System doesn't replace the creator, but empowers them by removing the heavy lifting of post-production." : "Nous croyons en un monde où les idées circulent librement de la conception à la publication. Où notre système d'exploitation de contenu ne remplace pas le créateur, mais le responsabilise en supprimant les tâches lourdes de la post-production."}
                   </p>
                   <p className="text-white font-medium text-xl mt-8">
-                    {language === 'en' ? "Welcome to Content West. The ultimate Content Operating System." : "Bienvenue chez Content West. Le système d'exploitation de contenu ultime."}
+                    {language === 'en' ? "Welcome to Content OS. The ultimate Content Operating System." : "Bienvenue chez Content OS. Le système d'exploitation de contenu ultime."}
                   </p>
                 </div>
               </motion.div>

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { UploadSimple, FileVideo, X, CaretRight, GoogleDriveLogo, CheckCircle, MagnifyingGlass, Spinner } from '@phosphor-icons/react';
+import { UploadSimple, FileVideo, X, CaretRight, GoogleDriveLogo, CheckCircle, MagnifyingGlass, CircleNotch as Spinner } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Asset } from '../types';
 import { Badge } from '../components/Badge';

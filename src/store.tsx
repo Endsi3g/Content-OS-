@@ -5,7 +5,7 @@ import { mockAssets, mockClips, mockDocs, mockTeamMembers } from './data';
 import { Language } from './i18n';
 import { api } from './lib/api';
 
-export type AppView = 'overview' | 'landing' | 'inbox' | 'database' | 'workflow' | 'review' | 'editor' | 'c2c' | 'presentation' | 'knowledge' | 'settings' | 'aiCoach' | 'team' | 'analytics' | 'scripts' | 'changelog' | 'boardControl' | 'profile';
+export type AppView = 'overview' | 'landing' | 'inbox' | 'database' | 'workflow' | 'review' | 'editor' | 'c2c' | 'presentation' | 'knowledge' | 'settings' | 'aiCoach' | 'team' | 'analytics' | 'scripts' | 'changelog' | 'boardControl' | 'profile' | 'privacy' | 'terms';
 export type Theme = 'light' | 'dark' | 'bw';
 
 interface AppContextType {
@@ -221,7 +221,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ]);
 
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([
-    { id: 'admin', name: 'admin', allowedViews: ['overview', 'landing', 'inbox', 'database', 'workflow', 'review', 'editor', 'c2c', 'presentation', 'aiCoach', 'knowledge', 'scripts', 'team', 'analytics', 'changelog', 'settings', 'boardControl', 'profile'] },
+    { id: 'admin', name: 'admin', allowedViews: ['overview', 'landing', 'inbox', 'database', 'workflow', 'review', 'editor', 'c2c', 'presentation', 'aiCoach', 'knowledge', 'scripts', 'team', 'analytics', 'changelog', 'settings', 'boardControl', 'profile', 'privacy', 'terms'] },
     { id: 'editor', name: 'editor', allowedViews: ['overview', 'inbox', 'database', 'workflow', 'review', 'editor', 'c2c', 'presentation', 'aiCoach', 'knowledge', 'scripts', 'team', 'analytics', 'changelog', 'settings', 'profile'] },
     { id: 'viewer', name: 'viewer', allowedViews: ['overview', 'review', 'presentation', 'knowledge', 'changelog', 'settings', 'profile'] }
   ]);

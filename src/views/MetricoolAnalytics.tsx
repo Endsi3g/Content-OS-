@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchMetricoolAnalytics } from '../services/metricoolService';
-import { ChartLineUp, Spinner, Users, TrendUp, CursorClick, ArrowUpRight, Sparkle } from '@phosphor-icons/react';
+import { ChartLineUp, CircleNotch as Spinner, Users, TrendUp, CursorClick, ArrowUpRight, Sparkle } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import {
   ComposedChart,

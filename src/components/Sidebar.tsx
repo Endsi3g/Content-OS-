@@ -209,6 +209,15 @@ export function Sidebar() {
         </DropdownMenu>
 
         <button 
+          onClick={() => window.open('https://github.com/Endsi3g/Content-OS-/releases/latest', '_blank')}
+          className={`w-full px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--hover-bg)]`}
+          title={isCollapsed ? 'Download Desktop' : undefined}
+        >
+          <div className="shrink-0"><MonitorPlay size={18} /></div>
+          {!isCollapsed && <span className="whitespace-nowrap text-blue-400">Download Desktop</span>}
+        </button>
+
+        <button 
           onClick={() => setCurrentView('settings')}
           className={`w-full px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} ${
             currentView === 'settings'

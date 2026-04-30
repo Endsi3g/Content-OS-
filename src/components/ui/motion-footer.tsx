@@ -6,6 +6,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { cn } from "../../lib/utils";
 import { AppleLogo, WindowsLogo } from "@phosphor-icons/react";
+import { useAppStore } from "../../store";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -198,17 +199,10 @@ const MagneticButton = React.forwardRef<HTMLElement, MagneticButtonProps>(
 );
 MagneticButton.displayName = "MagneticButton";
 
-const MarqueeItem = () => (
-  <div className="flex items-center space-x-12 px-6">
-    <span>Accountability Redefined</span> <span className="text-[var(--brand)]/60">✦</span>
-    <span>Transparent Tracking</span> <span className="text-[var(--brand)]/60">✦</span>
-    <span>12-Step Progress</span> <span className="text-[var(--brand)]/60">✦</span>
-    <span>Sponsor Connection</span> <span className="text-[var(--brand)]/60">✦</span>
-    <span>Absolute Privacy</span> <span className="text-[var(--brand)]/60">✦</span>
-  </div>
-);
+// MarqueeItem removed to reduce cognitive noise as per UX audit.
 
 export function CinematicFooter() {
+  const { setCurrentView } = useAppStore();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const giantTextRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -282,13 +276,6 @@ export function CinematicFooter() {
             CONTENT OS
           </div>
 
-          <div className="absolute top-12 left-0 w-full overflow-hidden border-y border-[var(--border)]/50 bg-[var(--surface)]/60 backdrop-blur-md py-4 z-10 -rotate-2 scale-110 shadow-xl">
-            <div className="flex w-max animate-footer-scroll-marquee text-xs md:text-sm font-bold tracking-[0.3em] text-[var(--text-muted)] uppercase">
-              <MarqueeItem />
-              <MarqueeItem />
-            </div>
-          </div>
-
           <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 mt-20 w-full max-w-5xl mx-auto">
             <h2
               ref={headingRef}
@@ -311,13 +298,13 @@ export function CinematicFooter() {
               </div>
 
               <div className="flex flex-wrap justify-center gap-3 md:gap-6 w-full mt-2">
-                <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[var(--text-muted)] font-medium text-xs md:text-sm hover:text-[var(--text-main)]">
+                <MagneticButton as="button" onClick={() => setCurrentView('privacy')} className="footer-glass-pill px-6 py-3 rounded-full text-[var(--text-muted)] font-medium text-xs md:text-sm hover:text-[var(--text-main)]">
                   Privacy Policy
                 </MagneticButton>
-                <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[var(--text-muted)] font-medium text-xs md:text-sm hover:text-[var(--text-main)]">
+                <MagneticButton as="button" onClick={() => setCurrentView('terms')} className="footer-glass-pill px-6 py-3 rounded-full text-[var(--text-muted)] font-medium text-xs md:text-sm hover:text-[var(--text-main)]">
                   Terms of Service
                 </MagneticButton>
-                <MagneticButton as="a" href="#" className="footer-glass-pill px-6 py-3 rounded-full text-[var(--text-muted)] font-medium text-xs md:text-sm hover:text-[var(--text-main)]">
+                <MagneticButton as="a" href="mailto:support@contentos.app" className="footer-glass-pill px-6 py-3 rounded-full text-[var(--text-muted)] font-medium text-xs md:text-sm hover:text-[var(--text-main)]">
                   Support
                 </MagneticButton>
               </div>

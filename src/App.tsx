@@ -30,6 +30,8 @@ import { Changelog } from './views/Changelog';
 import { BoardControl } from './views/BoardControl';
 import { LandingPage } from './views/LandingPage';
 import { Profile as ProfileView } from './views/Profile';
+import { PrivacyPage } from './views/PrivacyPage';
+import { TermsPage } from './views/TermsPage';
 import { Onboarding } from './components/Onboarding';
 import { ProfileMenu } from './components/ProfileMenu';
 import { WorkspaceSwitcher } from './components/WorkspaceSwitcher';
@@ -59,11 +61,13 @@ function AuthenticatedApp() {
 
   useKeyboardShortcuts(setCurrentView, () => setIsAddModalOpen(true));
 
-  if (currentView === 'landing') {
+  if (currentView === 'landing' || currentView === 'privacy' || currentView === 'terms') {
     return (
       <>
         <Toaster position="top-right" richColors />
-        <LandingPage />
+        {currentView === 'landing' && <LandingPage />}
+        {currentView === 'privacy' && <PrivacyPage />}
+        {currentView === 'terms' && <TermsPage />}
       </>
     );
   }
@@ -121,6 +125,8 @@ function AuthenticatedApp() {
               {currentView === 'changelog' && <Changelog />}
               {currentView === 'boardControl' && <BoardControl />}
               {currentView === 'profile' && <ProfileView />}
+              {currentView === 'privacy' && <PrivacyPage />}
+              {currentView === 'terms' && <TermsPage />}
             </motion.div>
           </AnimatePresence>
         </div>

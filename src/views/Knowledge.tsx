@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, MagnifyingGlass, Plus, BookBookmark, Notebook, FilePdf, FileDoc, Spinner, PencilSimple, Trash } from '@phosphor-icons/react';
+import { FileText, MagnifyingGlass, Plus, BookBookmark, Notebook, FilePdf, FileDoc, CircleNotch as Spinner, PencilSimple, Trash } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { KnowledgeDoc } from '../types';
 import { useAppStore } from '../store';

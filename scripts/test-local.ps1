@@ -33,8 +33,8 @@ if ($SkipEnv) {
 
 # 2. Dependencies
 if (!(Test-Path "node_modules")) {
-    Write-Host "[DEPS] Installing dependencies..." -ForegroundColor Magenta
-    npm install --legacy-peer-deps
+    Write-Host "[DEPS] Installing dependencies with pnpm..." -ForegroundColor Magenta
+    pnpm install
 }
 
 # 3. Database Layer
@@ -50,8 +50,8 @@ if ($Docker) {
 # 4. Prisma and Schema
 if (!$SkipMigrations -and !$SkipEnv) {
     Write-Host "[DB] Running database migrations..." -ForegroundColor Green
-    npx prisma generate
-    npx prisma db push
+    pnpm exec prisma generate
+    pnpm exec prisma db push
 } elseif ($SkipEnv) {
     Write-Host "[DB] Skipping database migrations due to UI mock mode (-SkipEnv)." -ForegroundColor Gray
 }
@@ -62,6 +62,6 @@ if ($Docker) {
     Write-Host "[DOCKER] App will run inside Docker container"
     docker-compose up app
 } else {
-    Write-Host "[LOCAL] App will run locally"
-    npm run dev
+    Write-Host "[LOCAL] App will run locally with pnpm"
+    pnpm run dev
 }

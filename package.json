@@ -6,10 +6,11 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "npx prisma generate && vite build && npx esbuild server.ts --platform=node --packages=external --bundle --format=cjs --outdir=dist --out-extension:.js=.cjs",
-    "start": "NODE_ENV=production npx prisma migrate deploy && NODE_ENV=production node dist/server.cjs",
-    "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "npm run build && electron-builder --win",
+    "build": "pnpm exec prisma generate && vite build && pnpm exec esbuild server.ts --platform=node --packages=external --bundle --format=cjs --outdir=dist --out-extension:.js=.cjs",
+    "start": "NODE_ENV=production pnpm exec prisma migrate deploy && NODE_ENV=production node dist/server.cjs",
+    "electron:dev": "cross-env NODE_ENV=development concurrently \"pnpm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "pnpm run build && electron-builder --win",
+    "build:win": "pnpm run electron:build",
     "electron:preview": "cross-env NODE_ENV=production electron .",
     "preview": "vite preview",
     "clean": "rm -rf dist dist_electron",
@@ -94,7 +95,7 @@
     "appId": "com.contentos.app",
     "productName": "Content OS",
     "directories": {
-      "output": "dist_electron"
+      "output": "dist_production"
     },
     "files": [
       "dist/**",
@@ -111,13 +112,11 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "electron/icon.ico",
-      "certificateFile": "build/certificate.pfx",
-      "certificatePassword": "${WIN_CSC_PASSWORD}"
+      "icon": "electron/icon.png"
     },
     "mac": {
       "target": "dmg",
-      "icon": "electron/icon.icns"
+      "icon": "electron/icon.png"
     },
     "linux": {
       "target": "AppImage",

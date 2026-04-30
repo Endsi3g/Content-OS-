@@ -46,9 +46,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (import.meta.env.VITE_MOCK_MODE === 'true') {
-      const mockUser = { uid: 'mock-123', email: 'test@example.com', displayName: 'UI Tester' } as User;
+      console.log('[AuthContext] Initializing in MOCK MODE');
+      const mockUser = { 
+        uid: 'mock-123', 
+        email: 'test@example.com', 
+        displayName: 'UI Tester',
+        emailVerified: true
+      } as User;
+      
       setUser(mockUser);
-      setDbUser({ id: 'mock-123', email: 'test@example.com', name: 'UI Tester', workspaces: [{ id: 'ws-1', name: 'Mock Workspace', role: 'admin' }] });
+      setDbUser({ 
+        id: 'mock-123', 
+        email: 'test@example.com', 
+        name: 'UI Tester', 
+        role: 'admin',
+        workspaces: [
+          { 
+            workspaceId: 'ws-1', 
+            role: 'admin',
+            workspace: { id: 'ws-1', name: 'Production Space' }
+          },
+          { 
+            workspaceId: 'ws-2', 
+            role: 'editor',
+            workspace: { id: 'ws-2', name: 'Editor Lab' }
+          },
+          { 
+            workspaceId: 'ws-3', 
+            role: 'viewer',
+            workspace: { id: 'ws-3', name: 'Viewer Only' }
+          }
+        ] 
+      });
       setLoading(false);
       return () => {};
     }

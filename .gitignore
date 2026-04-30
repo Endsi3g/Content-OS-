@@ -1,16 +1,28 @@
-node_modules/
-build/
+# build outputs
 dist/
-coverage/
-.DS_Store
-*.log
-.env*
-!.env.example
+dist_electron/
+dist_production/
+build/
+release/
 
 # database
 *.db
 *.db-journal
 prisma/dev.db
 
-# Firebase credentials (never commit — use VITE_FIREBASE_* env vars instead)
+# environment
+.env*
+!.env.example
+
+# logs and system
+node_modules/
+coverage/
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Firebase credentials
 firebase-applet-config.json

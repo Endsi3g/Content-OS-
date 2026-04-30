@@ -7,8 +7,17 @@ const AutoLaunch = require('auto-launch');
 const Sentry = require('@sentry/electron');
 
 // ─── Phase 3: Sentry Crash Reporting ──────────────────────────────────────────
-if (process.env.SENTRY_DSN) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN });
+if (process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN) {
+  const dsn = process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN;
+  Sentry.init({
+    dsn: dsn,
+    environment: isDev ? 'development' : 'production',
+    release: `content-os@${app.getVersion()}`,
+    debug: isDev,
+    integrations: [
+      new Sentry.Integrations.Anr({ captureStackTrace: true }),
+    ],
+  });
 }
 
 const { registerFFmpegHandlers } = require('./ffmpeg-service.cjs');

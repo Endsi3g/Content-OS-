@@ -63,7 +63,7 @@ Used for AI Coach chat and video clip analysis.
    ```
    ANTHROPIC_API_KEY=your-server-key
    VITE_ANTHROPIC_API_KEY=your-client-key
-   ANTHROPIC_MODEL=claude-3-7-sonnet-latest
+   ANTHROPIC_MODEL=claude-3-5-haiku-latest
    ```
 3. For production, ensure your client key is secured or calls are routed through the backend.
 

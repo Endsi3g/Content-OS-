@@ -427,7 +427,7 @@ api.post('/ai/coach/edit', async (req, res) => {
         : `You are a professional script editor. Improve the clarity, flow, and impact of this script text while preserving its meaning:\n\n${selectedText}\n\nReturn only the improved text, no commentary.`;
 
       const response = await anthropic.messages.create({
-        model: process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet-latest',
+        model: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
         max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
@@ -441,7 +441,7 @@ api.post('/ai/coach/edit', async (req, res) => {
       data: {
         prompt: selectedText.substring(0, 500),
         response: improvedText.substring(0, 2000),
-        model: process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet-latest',
+        model: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
       },
     });
 
@@ -995,7 +995,7 @@ Respond in JSON format with these exact fields:
 Return ONLY valid JSON, no markdown fences.`;
 
     const response = await anthropic.messages.create({
-      model: process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet-latest',
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
@@ -1020,7 +1020,7 @@ Return ONLY valid JSON, no markdown fences.`;
       data: {
         prompt: prompt.substring(0, 500),
         response: JSON.stringify(result).substring(0, 2000),
-        model: process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet-latest',
+        model: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
         userId: req.dbUser?.id || null,
       },
     });

@@ -90,7 +90,7 @@ export async function sendChatMessage(
 
   try {
     const response = await ai.messages.create({
-      model: import.meta.env.VITE_ANTHROPIC_CHAT_MODEL || 'claude-3-5-haiku-latest',
+      model: import.meta.env.VITE_ANTHROPIC_CHAT_MODEL || 'claude-4-5-haiku-latest',
       max_tokens: 2048,
       system: instruction,
       messages: anthropicMessages,
@@ -129,7 +129,7 @@ export async function transcribeMedia(file: File): Promise<string> {
     });
 
     const response = await ai.messages.create({
-      model: import.meta.env.VITE_ANTHROPIC_CHAT_MODEL || 'claude-3-5-haiku-latest',
+      model: import.meta.env.VITE_ANTHROPIC_CHAT_MODEL || 'claude-4-5-haiku-latest',
       max_tokens: 2048,
       messages: [{
         role: 'user',

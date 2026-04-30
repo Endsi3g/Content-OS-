@@ -32,7 +32,7 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY----
 
 # Claude AI
 ANTHROPIC_API_KEY=your-key
-ANTHROPIC_MODEL=claude-3-5-haiku-latest
+ANTHROPIC_MODEL=claude-4-5-haiku-latest
 
 # Google Drive OAuth
 GOOGLE_DRIVE_CLIENT_ID=xxx.apps.googleusercontent.com

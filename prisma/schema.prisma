@@ -25,6 +25,11 @@ model User {
   reviews       ClipReview[]
   workspaces    WorkspaceMember[]
   sentInvites   Invitation[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+  driveToken    GoogleDriveToken?
+  aiInteractions AiInteraction[]
+  comments      Comment[]      @relation("CommentAuthor")
 }
 
 model Workspace {
@@ -36,6 +41,7 @@ model Workspace {
   members     WorkspaceMember[]
   projects    Project[]
   invitations Invitation[]
+  activityLogs ActivityLog[]
 }
 
 model Invitation {
@@ -149,6 +155,8 @@ model AiInteraction {
   response    String
   model       String   @default("claude-3-opus")
   status      String   @default("completed")
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
 }
 
@@ -170,7 +178,9 @@ model Comment {
   timePct     Float
   timeStr     String
   text        String
-  author      String
+  author      String?  // Legacy field, nullable for migration
+  authorId    String?
+  authorUser  User?    @relation("CommentAuthor", fields: [authorId], references: [id])
   resolved    Boolean  @default(false)
   drawing     String?  // JSON serialized drawing data
   createdAt   DateTime @default(now())
@@ -221,4 +231,52 @@ model PresentationVideo {
   thumbnail       String
   videoUrl        String?
   createdAt       DateTime     @default(now())
+}
+
+// ── New Models (Phase 1 — Multiplayer & Integrations) ───────────────────────
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // 'comment' | 'review' | 'invite' | 'mention'
+  title       String
+  body        String
+  read        Boolean  @default(false)
+  linkView    String?  // 'editor' | 'review' | etc.
+  linkId      String?  // assetId, scriptId, etc.
+  createdAt   DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String   // 'asset.created' | 'clip.approved' | 'script.edited' etc.
+  entityType  String   // 'asset' | 'clip' | 'script'
+  entityId    String
+  metadata    String?  // JSON
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+}
+
+model YjsDocument {
+  id          String   @id  // e.g. 'workspace:wsp_xxx' | 'script:scr_xxx'
+  state       Bytes    // Binary Yjs state (from Y.encodeStateAsUpdate)
+  updatedAt   DateTime @updatedAt
+}
+
+model GoogleDriveToken {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 }

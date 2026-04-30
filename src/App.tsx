@@ -36,6 +36,8 @@ import { WorkspaceSwitcher } from './components/WorkspaceSwitcher';
 import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { ActionSearchBar } from './components/ui/action-search-bar';
+import { WorkspacePresence, OnlineAvatars } from './components/WorkspacePresence';
+import { NotificationBell } from './components/NotificationBell';
 import { useAuth } from './contexts/AuthContext';
 import { t } from './i18n';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -81,7 +83,9 @@ function AuthenticatedApp() {
           <div className="flex-1 flex justify-center min-w-[300px]">
              <ActionSearchBar />
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end items-center gap-1">
+            <OnlineAvatars />
+            <NotificationBell />
             <ProfileMenu />
           </div>
         </header>
@@ -176,7 +180,11 @@ function AppContent() {
     return <InviteFlow token={inviteToken} onComplete={() => setInviteToken(null)} />;
   }
 
-  return <AuthenticatedApp />;
+  return (
+    <WorkspacePresence>
+      <AuthenticatedApp />
+    </WorkspacePresence>
+  );
 }
 
 

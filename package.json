@@ -15,7 +15,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^1.50.1",
+    "@anthropic-ai/sdk": "^0.33.1",
     "@hello-pangea/dnd": "^18.0.1",
     "@hocuspocus/provider": "^4.0.0",
     "@hocuspocus/server": "^4.0.0",

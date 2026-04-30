@@ -91,32 +91,59 @@ export function ClipReview() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab, selectedClip, handleApprove, handleReject]);
 
-  const handleLongVideoUpload = (files: FileList | null) => {
+  const handleLongVideoUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
     setIsUploading(true);
     setUploadProgress(0);
     setAiReviewResult(null);
 
-    // Simulate upload to Google Drive and AI processing
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsUploading(false);
-            setAiReviewResult({
-              title: "The Counter-Intuitive Secret to Scaling Engineering Velocity",
-              description: "Stop managing remote teams like they're in the office. In this video, we break down the exact framework used by top tech companies to maintain high velocity in a distributed environment.\n\nTimestamps:\n0:00 - The Remote Work Myth\n2:15 - Asynchronous Communication\n5:30 - The Documentation Culture\n8:45 - Measuring Output, Not Hours",
-              hashtags: "#RemoteWork #EngineeringManagement #TechLeadership #Productivity #FutureOfWork",
-              transcription: "Everyone tells you to just use Slack and Zoom more when you go remote, but here is why that will actually destroy your engineering velocity. The secret isn't more communication, it's more documentation. When you force engineers to be synchronously available, you break their flow state. Instead, you need to build a culture where..."
+    const file = files[0];
+    try {
+      const { ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
+      const { storage } = await import('../lib/firebase');
+      const { api } = await import('../lib/api');
+
+      const storageRef = ref(storage, `long-videos/${Date.now()}_${file.name}`);
+      const task = uploadBytesResumable(storageRef, file);
+
+      task.on('state_changed',
+        (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+        (err) => {
+          setIsUploading(false);
+          setUploadProgress(0);
+        },
+        async () => {
+          try {
+            const videoUrl = await getDownloadURL(task.snapshot.ref);
+            // Call Claude analysis endpoint
+            const res = await api.post('/api/clips/analyze', {
+              videoUrl,
+              fileName: file.name,
             });
-          }, 1000);
-          return 100;
+            setAiReviewResult({
+              title: res.title || 'Untitled',
+              description: res.description || '',
+              hashtags: res.hashtags || '',
+              transcription: res.transcription || '',
+            });
+          } catch (e) {
+            // Fallback if AI analysis fails
+            setAiReviewResult({
+              title: `Analysis — ${file.name}`,
+              description: 'AI analysis could not be completed. Please configure ANTHROPIC_API_KEY.',
+              hashtags: '#Content #Video',
+              transcription: 'Transcription not available.',
+            });
+          } finally {
+            setIsUploading(false);
+          }
         }
-        return prev + 5;
-      });
-    }, 200);
+      );
+    } catch (e) {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   return (
@@ -306,6 +333,10 @@ export function ClipReview() {
                     <div className="flex items-center gap-3">
                       <Check size={24} className="text-green-600" weight="bold" />
                       <div>
+                        <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                          <Sparkle size={16} className="text-[var(--accent)]" />
+                          Claude Analysis
+                        </p>
                         <h3 className="text-sm font-semibold text-green-800">{t('review.complete', language)}</h3>
                         <p className="text-xs text-green-600">{t('review.syncCompleteDesc', language)}</p>
                       </div>

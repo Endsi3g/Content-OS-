@@ -19,7 +19,7 @@ export default defineConfig({
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
           gsap: ['gsap'],
           motion: ['motion', 'framer-motion'],
-          genai: ['@google/genai'],
+          anthropic: ['@anthropic-ai/sdk'],
           recharts: ['recharts'],
           icons: ['lucide-react', '@phosphor-icons/react'],
           pdf: ['react-pdf'],

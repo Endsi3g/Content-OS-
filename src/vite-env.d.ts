@@ -8,9 +8,9 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
   readonly VITE_FIREBASE_APP_ID: string;
   readonly VITE_FIREBASE_FIRESTORE_DATABASE_ID: string;
-  readonly VITE_GEMINI_API_KEY: string;
-  readonly VITE_GEMINI_CHAT_MODEL: string;
-  readonly VITE_GEMINI_FAST_MODEL: string;
+  readonly VITE_ANTHROPIC_API_KEY: string;
+  readonly VITE_ANTHROPIC_CHAT_MODEL: string;
+  readonly VITE_ANTHROPIC_FAST_MODEL: string;
   readonly VITE_METRICOOL_API_KEY: string;
   readonly VITE_FREEFRAME_URL: string;
 }

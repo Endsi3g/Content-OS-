@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as admin from 'firebase-admin';
+import { PrismaClient } from '@prisma/client';
 
 if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -18,10 +19,23 @@ if (!admin.apps.length) {
   }
 }
 
+// ── Types ────────────────────────────────────────────────────────────────────
+
+export interface DbUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  workspaces: { workspaceId: string; role: string }[];
+}
+
 export interface AuthenticatedRequest extends Request {
   firebaseUid?: string;
   firebaseEmail?: string;
+  dbUser?: DbUser;
 }
+
+// ── Middleware: requireAuth ──────────────────────────────────────────────────
 
 export async function requireAuth(
   req: AuthenticatedRequest,
@@ -49,4 +63,107 @@ export async function requireAuth(
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
+}
+
+// ── Middleware: loadDbUser ───────────────────────────────────────────────────
+// Must be called after requireAuth. Loads the DB user and workspace memberships.
+
+let _prisma: PrismaClient | null = null;
+function getPrisma(): PrismaClient {
+  if (!_prisma) _prisma = new PrismaClient();
+  return _prisma;
+}
+
+export async function loadDbUser(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  // In dev mode without Firebase credentials, try to load user from query/body email
+  const email = req.firebaseEmail || (req.query.email as string) || (req.body?.email as string);
+  if (!email) {
+    // If no email available, allow request to proceed without dbUser (for dev mode)
+    next();
+    return;
+  }
+
+  try {
+    const prisma = getPrisma();
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        workspaces: {
+          select: { workspaceId: true, role: true },
+        },
+      },
+    });
+
+    if (user) {
+      req.dbUser = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        workspaces: user.workspaces,
+      };
+    }
+    next();
+  } catch (e) {
+    console.error('loadDbUser error:', e);
+    next(); // Don't block request on DB failures
+  }
+}
+
+// ── RBAC Helpers ─────────────────────────────────────────────────────────────
+
+/** Returns true if the user has global admin role */
+export function isAdmin(req: AuthenticatedRequest): boolean {
+  return req.dbUser?.role === 'admin';
+}
+
+/** Middleware: blocks non-admin users with 403 */
+export function requireAdmin(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+}
+
+/** Returns the list of workspace IDs the user has access to */
+export function getUserWorkspaceIds(dbUser?: DbUser): string[] {
+  if (!dbUser) return [];
+  return dbUser.workspaces.map(w => w.workspaceId);
+}
+
+/** Returns the user's role in a specific workspace, or null if not a member */
+export function getWorkspaceRole(dbUser: DbUser | undefined, workspaceId: string): string | null {
+  if (!dbUser) return null;
+  const membership = dbUser.workspaces.find(w => w.workspaceId === workspaceId);
+  return membership?.role ?? null;
+}
+
+/** Middleware factory: checks if user is a member of the workspace in req.params.id */
+export function requireWorkspaceMember(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) {
+  const workspaceId = req.params.id;
+  if (!workspaceId) {
+    return res.status(400).json({ error: 'Workspace ID required' });
+  }
+  // Global admins always pass
+  if (isAdmin(req)) {
+    next();
+    return;
+  }
+  const role = getWorkspaceRole(req.dbUser, workspaceId);
+  if (!role) {
+    return res.status(403).json({ error: 'Not a member of this workspace' });
+  }
+  next();
 }

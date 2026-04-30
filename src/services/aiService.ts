@@ -1,6 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
+import Anthropic from '@anthropic-ai/sdk';
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+const ai = new Anthropic({ 
+  apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
+  dangerouslyAllowBrowser: true
+});
 
 const BASE_SYSTEM_INSTRUCTION = `You are an expert AI Content Creation Assistant and Strategist for a Content OS.
 Your role is to act as a proactive coach:
@@ -45,40 +48,59 @@ export async function sendChatMessage(
     })
   );
 
-  const parts: any[] = [];
+  const anthropicMessages: any[] = [];
+  
+  // Convert generic history to Anthropic format
+  for (const msg of history) {
+    if (msg.role === 'model') {
+      anthropicMessages.push({ role: 'assistant', content: msg.parts.map((p: any) => p.text).join('\n') });
+    } else {
+      anthropicMessages.push({ role: 'user', content: msg.parts.map((p: any) => p.text).join('\n') });
+    }
+  }
+
+  const currentMessageParts: any[] = [];
   if (text) {
-    parts.push({ text });
+    currentMessageParts.push({ type: 'text', text });
   }
   
   if (fileParts.length > 0) {
-    parts.push(...fileParts);
+    for (const fp of fileParts) {
+      if (fp.inlineData.mimeType.startsWith('image/')) {
+        currentMessageParts.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: fp.inlineData.mimeType,
+            data: fp.inlineData.data,
+          }
+        });
+      } else {
+         // Claude only supports image/document natively, fallback text description
+         currentMessageParts.push({ type: 'text', text: `[File attached: ${fp.inlineData.mimeType}]` });
+      }
+    }
   }
 
-  // To prevent crashing with empty parts if just sending file
-  if (parts.length === 0) {
-    parts.push({ text: "Please analyze the attached files." });
+  if (currentMessageParts.length === 0) {
+    currentMessageParts.push({ type: 'text', text: "Please analyze the attached files." });
   }
+
+  anthropicMessages.push({ role: 'user', content: currentMessageParts });
 
   try {
-    const response = await ai.models.generateContent({
-      model: import.meta.env.VITE_GEMINI_CHAT_MODEL || 'gemini-2.0-flash',
-      contents: [
-        ...history,
-        {
-          role: 'user',
-          parts
-        }
-      ],
-      config: {
-        systemInstruction: instruction,
-        temperature: 0.7,
-      }
+    const response = await ai.messages.create({
+      model: import.meta.env.VITE_ANTHROPIC_CHAT_MODEL || 'claude-3-7-sonnet-latest',
+      max_tokens: 2048,
+      system: instruction,
+      messages: anthropicMessages,
+      temperature: 0.7,
     });
 
-    return response.text;
+    return (response.content[0] as any).text;
   } catch (error: any) {
-    if (error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('exhausted') || error?.message?.includes('Resource has been exhausted')) {
-      return "⚠️ **Rate Limit Exceeded:** The AI API is currently rate limited (free tier quota). Please wait a few moments and try your request again.";
+    if (error?.status === 429) {
+      return "⚠️ **Rate Limit Exceeded:** The AI API is currently rate limited. Please wait a few moments and try your request again.";
     }
     console.error("AI Error:", error);
     throw error;
@@ -106,21 +128,19 @@ export async function transcribeMedia(file: File): Promise<string> {
       reader.readAsDataURL(file);
     });
 
-    const response = await ai.models.generateContent({
-      model: import.meta.env.VITE_GEMINI_CHAT_MODEL || 'gemini-2.0-flash',
-      contents: [{
+    const response = await ai.messages.create({
+      model: import.meta.env.VITE_ANTHROPIC_CHAT_MODEL || 'claude-3-7-sonnet-latest',
+      max_tokens: 2048,
+      messages: [{
         role: 'user',
-        parts: [
-          filePart,
-          { text: 'Please transcribe the audio in this file verbatim. Return ONLY the transcription text. Do not add any extra commentary or formatting. If there is no audio, return "[No audio detected]".' }
+        content: [
+          { type: 'text', text: 'Please transcribe the audio in this file verbatim. Return ONLY the transcription text. Do not add any extra commentary or formatting. If there is no audio, return "[No audio detected]".' }
         ]
       }],
-      config: {
-        temperature: 0.1, // low temperature for accurate transcription
-      }
+      temperature: 0.1, // low temperature for accurate transcription
     });
 
-    return response.text?.trim() || '[Empty transcription]';
+    return (response.content[0] as any).text?.trim() || '[Empty transcription]';
   } catch (error: any) {
     console.warn('Silent fallback: Error transcribing media.', error?.message);
     throw new Error('Transcription failed due to API limits or file size.');
@@ -129,19 +149,18 @@ export async function transcribeMedia(file: File): Promise<string> {
 
 export async function generateChatTitle(firstMessage: string) {
   try {
-    const response = await ai.models.generateContent({
-      model: import.meta.env.VITE_GEMINI_FAST_MODEL || 'gemini-2.0-flash',
-      contents: [{
+    const response = await ai.messages.create({
+      model: import.meta.env.VITE_ANTHROPIC_FAST_MODEL || 'claude-3-5-haiku-latest',
+      max_tokens: 64,
+      messages: [{
         role: 'user',
-        parts: [{ text: `Generate a very short, concise title (max 5 words) for a chat that starts with the following message: "${firstMessage}"` }]
+        content: `Generate a very short, concise title (max 5 words) for a chat that starts with the following message: "${firstMessage}"`
       }],
-      config: {
-        temperature: 0.5,
-      }
+      temperature: 0.5,
     });
     
     // Remove quotes if present
-    let title = response.text?.trim() || 'New Chat';
+    let title = (response.content[0] as any).text?.trim() || 'New Chat';
     if (title.startsWith('"') && title.endsWith('"')) {
       title = title.substring(1, title.length - 1);
     }

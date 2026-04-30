@@ -54,36 +54,58 @@ export function VideoInbox() {
     }
   };
 
-  const handleFileUpload = (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
     const file = files[0];
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsUploading(false);
+    try {
+      const { ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
+      const { storage } = await import('../lib/firebase');
+      const { api } = await import('../lib/api');
+
+      const storageRef = ref(storage, `videos/${Date.now()}_${file.name}`);
+      const task = uploadBytesResumable(storageRef, file);
+
+      task.on('state_changed',
+        (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+        (err) => {
+          setIsUploading(false);
+          setUploadProgress(0);
+          toast.error(language === 'fr' ? 'Échec de l\'upload: ' + err.message : 'Upload failed: ' + err.message);
+        },
+        async () => {
+          try {
+            const url = await getDownloadURL(task.snapshot.ref);
+            const res = await api.post('/api/assets', {
+              storagePath: url,
+              type: 'video',
+              title: file.name.replace(/\.[^/.]+$/, ''),
+            });
             addAsset({
-              title: file.name.replace(/\.[^/.]+$/, ""),
+              title: file.name.replace(/\.[^/.]+$/, ''),
               client: '',
               campaign: '',
               status: 'inbox',
-              duration: '00:00', // Mock duration
+              duration: '00:00',
               order: 0,
             });
+            toast.success(language === 'fr' ? 'Fichier uploadé et synchronisé' : 'File uploaded and synced');
+          } catch (e) {
+            toast.error(language === 'fr' ? 'Erreur lors de la création de l\'asset' : 'Failed to create asset');
+          } finally {
+            setIsUploading(false);
             setUploadProgress(0);
-            toast.success(language === 'fr' ? 'Fichier uploadé et synchronisé sur Drive' : 'File uploaded and synced to Drive');
-          }, 500);
-          return 100;
+          }
         }
-        return prev + 10;
-      });
-    }, 200);
+      );
+    } catch (e) {
+      setIsUploading(false);
+      setUploadProgress(0);
+      toast.error(language === 'fr' ? 'Erreur d\'upload' : 'Upload error');
+    }
   };
 
   return (

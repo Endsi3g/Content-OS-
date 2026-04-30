@@ -1204,6 +1204,10 @@ async function startServer() {
     console.log(`Server listening on port ${PORT}`);
 
     (async () => {
+      if (process.env.VITE_MOCK_MODE === 'true') {
+        console.log('[Mock Mode] Skipping database connectivity checks.');
+        return;
+      }
       try {
         const count = await prisma.project.count();
         if (count === 0) await seedDatabase();

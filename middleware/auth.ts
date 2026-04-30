@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import * as admin from 'firebase-admin';
 import { PrismaClient } from '@prisma/client';
 
-if (!admin.apps.length) {
+// Safely get apps array depending on how ESM loaded firebase-admin
+const apps = admin.apps || (admin as any).default?.apps || [];
+
+if (!apps.length && process.env.VITE_MOCK_MODE !== 'true') {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
@@ -17,6 +20,8 @@ if (!admin.apps.length) {
     admin.initializeApp({ projectId: projectId || 'dev' });
     console.warn('Firebase Admin: credentials not fully configured — token verification disabled.');
   }
+} else if (process.env.VITE_MOCK_MODE === 'true') {
+  console.log('[Mock Mode] Skipping Firebase Admin initialization.');
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────

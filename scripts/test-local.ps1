@@ -48,10 +48,12 @@ if ($Docker) {
 }
 
 # 4. Prisma and Schema
-if (!$SkipMigrations) {
+if (!$SkipMigrations -and !$SkipEnv) {
     Write-Host "[DB] Running database migrations..." -ForegroundColor Green
     npx prisma generate
     npx prisma db push
+} elseif ($SkipEnv) {
+    Write-Host "[DB] Skipping database migrations due to UI mock mode (-SkipEnv)." -ForegroundColor Gray
 }
 
 # 5. Start Application

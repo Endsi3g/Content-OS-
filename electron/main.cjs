@@ -4,6 +4,12 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, globalShortcut, ipcMain, di
 const path = require('path');
 const fs = require('fs');
 const AutoLaunch = require('auto-launch');
+const Sentry = require('@sentry/electron');
+
+// ─── Phase 3: Sentry Crash Reporting ──────────────────────────────────────────
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN });
+}
 
 const { registerFFmpegHandlers } = require('./ffmpeg-service.cjs');
 const { registerOfflineHandlers } = require('./offline-store.cjs');
@@ -309,27 +315,27 @@ if (!gotTheLock) {
   });
 }
 
-// ─── Phase 3: Auto-Update Scaffold ────────────────────────────────────────────
-// When electron-updater is installed, uncomment the following:
-// const { autoUpdater } = require('electron-updater');
-// autoUpdater.autoDownload = true;
-// autoUpdater.autoInstallOnAppQuit = true;
-//
-// autoUpdater.on('update-available', (info) => {
-//   showTrayNotification('Mise a jour disponible', `Version ${info.version} est en cours de telechargement.`);
-// });
-//
-// autoUpdater.on('update-downloaded', () => {
-//   showTrayNotification('Mise a jour prete', 'Redemarrez Content OS pour appliquer la mise a jour.');
-// });
-//
-// In app.whenReady(), add: autoUpdater.checkForUpdatesAndNotify();
+// ─── Phase 3: Auto-Update ───────────────────────────────────────────────────
+const { autoUpdater } = require('electron-updater');
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('update-available', (info) => {
+  showTrayNotification('Mise a jour disponible', `Version ${info.version} est en cours de telechargement.`);
+});
+
+autoUpdater.on('update-downloaded', () => {
+  showTrayNotification('Mise a jour prete', 'Redemarrez Content OS pour appliquer la mise a jour.');
+});
 
 // ─── App Lifecycle ────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   createWindow();
   createTray();
   registerShortcuts();
+
+  // Check for updates
+  autoUpdater.checkForUpdatesAndNotify();
   
   // Register phase 2 & 3 services
   registerFFmpegHandlers(mainWindow);

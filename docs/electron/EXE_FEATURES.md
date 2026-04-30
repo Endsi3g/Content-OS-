@@ -131,8 +131,8 @@ Placer dans le dossier `electron/` :
   - Single-instance lock pour Windows, `open-url` event pour macOS.
   - Exemple : `contentos://script/123` navigue automatiquement vers `/script/123`.
 
-## Phase 3 — Distribution (Scaffolded)
+## Phase 3 — Distribution (Implemented)
 
-- [x] **Auto-Update** : Code scaffold dans `main.cjs` — decommentez pour activer `electron-updater`.
-- [ ] **Code Signing** : Certificat Windows pour eviter les avertissements SmartScreen.
-- [ ] **Crash Reports** : Integration Sentry pour le monitoring du client desktop.
+- [x] **Auto-Update** : `electron-updater` activé avec vérification au démarrage et notifications système via le tray.
+- [x] **Code Signing** : Configuration ajoutée dans `package.json` (nécessite `build/certificate.pfx` et `WIN_CSC_PASSWORD`).
+- [x] **Crash Reports** : Intégration Sentry complète dans le Main et le Renderer pour le monitoring des erreurs.

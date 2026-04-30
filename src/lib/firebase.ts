@@ -3,7 +3,16 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-const firebaseConfig = {
+const isMockMode = import.meta.env.VITE_MOCK_MODE === 'true';
+
+const firebaseConfig = isMockMode ? {
+  apiKey: 'mock-api-key',
+  authDomain: 'mock-domain.firebaseapp.com',
+  projectId: 'mock-project',
+  storageBucket: 'mock-bucket.appspot.com',
+  messagingSenderId: 'mock-sender-id',
+  appId: '1:123456789:web:abcdef',
+} : {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -12,7 +21,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
+const firestoreDatabaseId = isMockMode ? 'mock-db' : import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firestoreDatabaseId);

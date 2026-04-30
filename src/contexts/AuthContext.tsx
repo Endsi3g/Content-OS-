@@ -45,6 +45,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    if (import.meta.env.VITE_MOCK_MODE === 'true') {
+      const mockUser = { uid: 'mock-123', email: 'test@example.com', displayName: 'UI Tester' } as User;
+      setUser(mockUser);
+      setDbUser({ id: 'mock-123', email: 'test@example.com', name: 'UI Tester', workspaces: [{ id: 'ws-1', name: 'Mock Workspace', role: 'admin' }] });
+      setLoading(false);
+      return () => {};
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user && user.email) {

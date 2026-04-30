@@ -1,7 +1,8 @@
 param (
     [switch]$Docker,
     [switch]$SkipMigrations,
-    [switch]$Clean
+    [switch]$Clean,
+    [switch]$SkipEnv
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,11 +19,16 @@ if ($Clean) {
 }
 
 # 1. Check Environment
-if (!(Test-Path ".env")) {
+if (!(Test-Path ".env") -and !$SkipEnv) {
     Write-Host "[WARN] .env not found. Copying from .env.example..." -ForegroundColor Yellow
     Copy-Item ".env.example" ".env"
-    Write-Host "[ACTION] Please fill in .env with your credentials before proceeding." -ForegroundColor Red
+    Write-Host "[ACTION] Please fill in .env with your credentials before proceeding, or use -SkipEnv to test UI only." -ForegroundColor Red
     exit
+}
+
+if ($SkipEnv) {
+    Write-Host "[INFO] Skipping .env validation. App will run in UI-only/mock mode if configured." -ForegroundColor Blue
+    $env:VITE_MOCK_MODE="true"
 }
 
 # 2. Dependencies

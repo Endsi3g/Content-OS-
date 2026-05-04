@@ -95,7 +95,7 @@
     "appId": "com.contentos.app",
     "productName": "Content OS",
     "directories": {
-      "output": "dist_production"
+      "output": "dist_final"
     },
     "files": [
       "dist/**",
